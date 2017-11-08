@@ -14,8 +14,20 @@ import tensorflow as tf
 import cv2
 from collections import defaultdict
 from io import StringIO
+import PIL.Image as Image
+import PIL.ImageColor as ImageColor
+import PIL.ImageDraw as ImageDraw
+import PIL.ImageFont as ImageFont
+import six
 
+"""
+		This is an inference class for Traffic light detection, It will load a trained
+		graph with freezed weights and predicts the state of the light(14 classes)
+		 such as red,yellow,green,redLeft,greenLeft, etc.. 
+"""
 class TLClassifierx(object):
+
+
 
 	def __init__(self,*args):
 		self.detection = 0
@@ -35,22 +47,30 @@ class TLClassifierx(object):
 
 		self.input_img = self.detection_graph.get_tensor_by_name('image_tensor:0')
 
-		self.tl_class = self.detection_graph.get_tensor_by_name('detection_classes:0')
+		self.tl_classes = self.detection_graph.get_tensor_by_name('detection_classes:0')
 
 		self.tl_boxes = self.detection_graph.get_tensor_by_name('detection_boxes:0')
 		self.tl_scores = self.detection_graph.get_tensor_by_name('detection_scores:0')
+		self.num_detections = self.detection_graph.get_tensor_by_name('num_detections:0')
 
-	
+		#from tensorflow object detection api
+	def load_image_into_numpy_array(self,image):
+		(rows,cols,channels) = image.shape
+		(im_width, im_height) = (rows,cols)
+		return np.array(image).reshape((im_height, im_width, 3)).astype(np.uint8)	
+
 	def get_classification(self,img):
-		img_np = load_image_into_numpy_array(img)
+		img = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
+		img_np = self.load_image_into_numpy_array(img)
 		img_np = np.expand_dims(img_np,axis=0)
 		with self.detection_graph.as_default():
-			pred_class = self.sess.run(self.tl_class,feed_dict={self.input_img: img_np})
-		self.detection = np.argmax(pred_class)
-		return self.detection
+			(boxes, scores, classes, num) = self.sess.run(
+				[self.tl_boxes, self.tl_scores, self.tl_classes, self.num_detections],
+				feed_dict={self.input_img: img_np})
+			
+		self.detection = np.argmax(classes)
+		print(classes)
+		return 0#self.detection
 
-	#from tensorflow object detection api
-	def load_image_into_numpy_array(image):
-		(im_width, im_height) = image.size
-		return np.array(image.getdata()).reshape((im_height, im_width, 3)).astype(np.uint8)	
+
 
