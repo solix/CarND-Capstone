@@ -67,10 +67,11 @@ class TLClassifierx(object):
 			(boxes, scores, classes, num) = self.sess.run(
 				[self.tl_boxes, self.tl_scores, self.tl_classes, self.num_detections],
 				feed_dict={self.input_img: img_np})
-			
+
+		print("classes found {}".format(classes))	
 		self.detection = np.argmax(classes)
-		print(classes)
-		return 0#self.detection
+		
+		return self.detection
 
 
 
