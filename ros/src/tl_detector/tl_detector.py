@@ -131,6 +131,9 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+       
+        #TODO: when we spot a traffic light     
+
         light = True
 
 
