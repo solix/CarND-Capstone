@@ -19,6 +19,7 @@ import PIL.ImageColor as ImageColor
 import PIL.ImageDraw as ImageDraw
 import PIL.ImageFont as ImageFont
 import six
+import rospy
 
 """
 		This is an inference class for Traffic light detection, It will load a trained
@@ -31,7 +32,7 @@ class TLClassifierx(object):
 
 	def __init__(self,*args):
 		self.detection = -1
-		model = 'light_classification/data/models/frcnn-x-6577.pb'
+		model = 'light_classification/data/models/frcnn-i-11890.pb'
 		self.detection_graph = tf.Graph()
 		config = tf.ConfigProto()
 		print("Graph loaded")
@@ -69,7 +70,7 @@ class TLClassifierx(object):
 				[self.tl_boxes, self.tl_scores, self.tl_classes, self.num_detections],
 				feed_dict={self.input_img: img_np})
 
-		rospy.loginfo("classes found: %s scores found: %s",classes[0] , scores[0])	
+		rospy.logdebug("[light] classes found: %s scores found: %s",classes[0] , scores[0])	
 		self.detection = classes[0][0]
 		
 		return self.detection

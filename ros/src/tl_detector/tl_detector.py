@@ -133,8 +133,9 @@ class TLDetector(object):
         """
        
         #TODO: when we spot a traffic light     
-
+ 
         light = True
+        rospy.logdebug("processing the traffic nodes")
 
 
         # List of positions that correspond to the line to stop in front of for a given intersection
@@ -154,6 +155,7 @@ class TLDetector(object):
 
 if __name__ == '__main__':
     try:
+        rospy.logdebug("started traffic node")
         TLDetector()
     except rospy.ROSInterruptException:
         rospy.logerr('Could not start traffic node.')
