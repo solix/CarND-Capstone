@@ -1,7 +1,7 @@
 # Introduction
-This project is done as a part of the Nanodegree *Self-Driving Car Engineer* provided by Udacity. The aim of this final project is the application of many parts of the entire nanodegree and the integration on a real self-driving car. After development and testing with the aid of a simulator, the car (Carla) has to cope independently a test track with intersections and traffic lights. The core points of the project are the detection of traffic lights and the integration of functionality for path planning and control in the car by means of the Robot Operating System (ROS) nodes.
+This project is done as a part of the Nanodegree *Self-Driving Car Engineer* provided by Udacity. The aim of this final project is the application of many parts of the entire nanodegree and the integration on a real self-driving car. After development and testing with the aid of a simulator, the car (*Carla*) has to cope independently a test track with intersections and traffic lights. The core points of the project are the detection of traffic lights and the integration of functionality for path planning and control in the car by means of the Robot Operating System ([ROS](http://www.ros.org/)) nodes.
 
-The self driving car Carla:
+The self driving car *Carla*:
 ![image_screen](https://github.com/solix/CarND-Capstone/blob/master/info_for_readme/carla_sdc_1.jpg)
 
 Testing the system in the simulator:
@@ -13,26 +13,26 @@ Testing the system in the simulator:
 3. Project Description 
 4. ROS Architecture and Nodes
 5. ROS Topics
-6. Implementation Details
-7. Conclusion
+6. ROS Message Types
+7. Implementation Details
+8. Conclusion
 
 # Team Structure
 The project is implemented together in a team. 
 
-The following members are part of the international team - Chakra:
+The following members are part of the international team named ***Chakra***:
 * **Team Lead**
   * Soheil Jahanshahi ([soheil.jahanshahi@gmail.com](mailto:soheil.jahanshahi@gmail.com))
 * **Team Members**
   * Venkata Dikshit ([dikshit2632@gmail.com](mailto:dikshit2632@gmail.com))
   * Daniel Gattringer ([daniel@gattringer.biz](mailto:daniel@gattringer.biz))
   * Aneeq Mahmood ([aneeq.sdc@gmail.com](mailto:aneeq.sdc@gmail.com))
-  * Jongchul Seon ([jongchul.seon@gmail.com](mailto:jongchul.seon@gmail.com))
   * Wilhelm Nagel ([willi.nagel@gmail.com](mailto:willi.nagel@gmail.com))
 
 # Project Setup
 
 ### Development Setup
-The project will require the use of Ubuntu Linux (the operating system of Carla) and a new simulator. Follow the steps below to get set up:
+The project will require the use of Ubuntu Linux (the operating system of *Carla*) and a new simulator. Follow the steps below to get set up:
 * Because ROS is used, Ubuntu Linux is needed to develop and test the project code.
   * Ubuntu 14.04 with ROS Indigo
   * Ubuntu 16.04 with ROS Kinetic
@@ -62,20 +62,24 @@ roslaunch launch/styx.launch
 ```
 4. Run the simulator
 
-# Project Description 
+# Project Description
+### Project Goals
+The goal of the project is that an autonomous car - in a simulator or as a real vehicle - can handle a given test track without the intervention of a safety driver. The vehicle shall follow a given path, comply with the speed limit, accelerate and steer in a comfort-oriented manner without exceeding the limits for acceleration and jerk, and finally stop at red traffic lights and continue at green traffic lights.
 
+### Simulator
+For development and testing, a simulator is used. This simulator developed and made available by Udacity is based on the open source game engine [Unity 3D](https://unity3d.com).
 
-### Car/Simulator 
-The real car (Carla) is an autonomous Lincoln MKZ, running on the udacity test site in Palo Alto, California.
+### The self-driving Car - *Carla* 
+*Carla* is an autonomous Lincoln MKZ, running on the udacity test site in Palo Alto, California.
 
-Carlas Hardware Specs:
+*Carlas* Hardware Specs:
 * 31.4 GiB Memory
 * Intel Core i7-6700K CPU @ 4 GHz x 8
 * TITAN X Graphics
 * 64-bit OS
 
 # ROS Architecture and Nodes
-Carla uses Robot Operating System ([ROS](http://www.ros.org/)) to integrate all main functionalities.
+*Carla* uses Robot Operating System ([ROS](http://www.ros.org/)) to integrate all main functionalities.
 
 The following images shows the main ROS architucture for the project:
 ![architecture](https://github.com/solix/CarND-Capstone/blob/master/info_for_readme/final-project-ros-graph-v2.png)
@@ -91,7 +95,7 @@ This node takes the current position of the car from `/current_pose)`, and a lis
 ![image_waypoint_updater](https://github.com/solix/CarND-Capstone/blob/master/info_for_readme/waypoint-updater-ros-graph.png)
 
 ### DBW Node
-This node takes the current velocity of the car from `/current_velocity)`, the information if the control system should maneuver the car or a safety driver does from `/vehicle/dbw_enabled`, and twist commands from `/twist_cmd` and finally publishes commands for Carla's drive-by-wire system to `/vehicle/throttle_cmd`, `/vehicle/brake_cmd` and `/vehicle/steering_cmd`. The twist commands are generated and published to `/twist_cmd` by the waypoint follower node, which uses the data from `/final_waypoints` to generate this commands.
+This node takes the current velocity of the car from `/current_velocity)`, the information if the control system should maneuver the car or a safety driver does from `/vehicle/dbw_enabled`, and twist commands from `/twist_cmd` and finally publishes commands for *Carla's* drive-by-wire system to `/vehicle/throttle_cmd`, `/vehicle/brake_cmd` and `/vehicle/steering_cmd`. The twist commands are generated and published to `/twist_cmd` by the waypoint follower node, which uses the data from `/final_waypoints` to generate this commands.
 
 ![image_dbw](https://github.com/solix/CarND-Capstone/blob/master/info_for_readme/dbw-node-ros-graph.png)
 
@@ -121,11 +125,11 @@ This node takes the current velocity of the car from `/current_velocity)`, the i
 * /image_color
   * Provides an image stream from the car's camera. These images are used to determine the color of upcoming traffic lights
 * /current_pose
-  * Provides messages of custom type `geometry_msgs/PoseStamped` which contain the current position of the vehicle, delivered by the simulator or the localization module of Carla.
+  * Provides messages of custom type `geometry_msgs/PoseStamped` which contain the current position of the vehicle, delivered by the simulator or the localization module of *Carla*.
 * /current_velocity
-  * Provides messages which contain the current velocity of the vehicle, delivered by the simulator or localization module of Carla.
+  * Provides messages which contain the current velocity of the vehicle, delivered by the simulator or localization module of *Carla*.
 * /vehicle/dbw_enabled
-  * Provides the information if the control system should maneuver the car or a safety driver does. This information is available in both cases - using the simluator and using Carla.
+  * Provides the information if the control system should maneuver the car or a safety driver does. This information is available in both cases - using the simluator and using *Carla*.
 
 ### Vehicle Control
 * /twist_cmd
@@ -136,9 +140,42 @@ This node takes the current velocity of the car from `/current_velocity)`, the i
   * Published brake values are in units of torque `(N*m)`. The values for brake are computed by using the desired acceleration, the weight of the vehicle, and the wheel radius.
 * /vehicle/steering_cmd
   * TODO find out which values are published here.
-* /vehicle/trottle_cmd
-  * Published trottle values are in the range 0 to 1.
+* /vehicle/throttle_cmd
+  * Published throttle values are in the range 0 to 1.
 
+# ROS Message Types
+
+In addition to the [standard ROS message types](http://wiki.ros.org/std_msgs) like Int32, the following custom messages were used:
+
+* Lane.msg
+```
+Header header
+Waypoint[] waypoints
+```
+
+* Waypoint.msg
+```
+geometry_msgs/PoseStamped pose
+geometry_msgs/TwistStamped twist
+```
+
+* TrafficLight.msg
+```
+Header header
+geometry_msgs/PoseStamped pose
+uint8 state
+
+uint8 UNKNOWN=4
+uint8 GREEN=2
+uint8 YELLOW=1
+uint8 RED=0
+```
+
+* TrafficLightArray.msg
+```
+Header header
+TrafficLight[] lights
+```
 
 # Implementation Details
 
@@ -152,75 +189,4 @@ This node takes the current velocity of the car from `/current_velocity)`, the i
 
 # Conclusion
 
-
----
-
-This is the project repo for the final project of the Udacity Self-Driving Car Nanodegree: Programming a Real Self-Driving Car. For more information about the project, see the project introduction [here](https://classroom.udacity.com/nanodegrees/nd013/parts/6047fe34-d93c-4f50-8336-b70ef10cb4b2/modules/e1a23b06-329a-4684-a717-ad476f0d8dff/lessons/462c933d-9f24-42d3-8bdc-a08a5fc866e4/concepts/5ab4b122-83e6-436d-850f-9f4d26627fd9).
-
-### Native Installation
-
-* Be sure that your workstation is running Ubuntu 16.04 Xenial Xerus or Ubuntu 14.04 Trusty Tahir. [Ubuntu downloads can be found here](https://www.ubuntu.com/download/desktop).
-* If using a Virtual Machine to install Ubuntu, use the following configuration as minimum:
-  * 2 CPU
-  * 2 GB system memory
-  * 25 GB of free hard drive space
-
-  The Udacity provided virtual machine has ROS and Dataspeed DBW already installed, so you can skip the next two steps if you are using this.
-
-* Follow these instructions to install ROS
-  * [ROS Kinetic](http://wiki.ros.org/kinetic/Installation/Ubuntu) if you have Ubuntu 16.04.
-  * [ROS Indigo](http://wiki.ros.org/indigo/Installation/Ubuntu) if you have Ubuntu 14.04.
-* [Dataspeed DBW](https://bitbucket.org/DataspeedInc/dbw_mkz_ros)
-  * Use this option to install the SDK on a workstation that already has ROS installed: [One Line SDK Install (binary)](https://bitbucket.org/DataspeedInc/dbw_mkz_ros/src/81e63fcc335d7b64139d7482017d6a97b405e250/ROS_SETUP.md?fileviewer=file-view-default)
-* Download the [Udacity Simulator](https://github.com/udacity/CarND-Capstone/releases/tag/v1.2).
-
-### Docker Installation
-[Install Docker](https://docs.docker.com/engine/installation/)
-
-Build the docker container
-```bash
-docker build . -t capstone
-```
-
-Run the docker file
-```bash
-docker run -p 4567:4567 -v $PWD:/capstone -v /tmp/log:/root/.ros/ --rm -it capstone
-```
-
-### Usage
-
-1. Clone the project repository
-```bash
-git clone https://github.com/udacity/CarND-Capstone.git
-```
-
-2. Install python dependencies
-```bash
-cd CarND-Capstone
-pip install -r requirements.txt
-```
-3. Make and run styx
-```bash
-cd ros
-catkin_make
-source devel/setup.sh
-roslaunch launch/styx.launch
-```
-4. Run the simulator
-
-### Real world testing
-1. Download [training bag](https://drive.google.com/file/d/0B2_h37bMVw3iYkdJTlRSUlJIamM/view?usp=sharing) that was recorded on the Udacity self-driving car (a bag demonstraing the correct predictions in autonomous mode can be found [here](https://drive.google.com/open?id=0B2_h37bMVw3iT0ZEdlF4N01QbHc))
-2. Unzip the file
-```bash
-unzip traffic_light_bag_files.zip
-```
-3. Play the bag file
-```bash
-rosbag play -l traffic_light_bag_files/loop_with_traffic_light.bag
-```
-4. Launch your project in site mode
-```bash
-cd CarND-Capstone/ros
-roslaunch launch/site.launch
-```
-5. Confirm that traffic light detection works on real life images
+TODO
