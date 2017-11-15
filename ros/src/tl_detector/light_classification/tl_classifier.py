@@ -40,12 +40,13 @@ class TLClassifier(object):
             'final_result:0')
 
     def get_classification(self, img):
-        #img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) - not required unless reading input via cv2
+        # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) - not required unless
+        # reading input via cv2
         img = cv2.resize(img, (224, 224))
         img = np.expand_dims(img, axis=0)
         ###### Normalization code ########
-        input_mean = 0
-        input_std = 255
+        input_mean = 128
+        input_std = 128
         img = img.astype(float)
         normalized = tf.divide(tf.subtract(img, [input_mean]), [input_std])
         sess = tf.Session()
