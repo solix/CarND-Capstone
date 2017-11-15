@@ -40,13 +40,20 @@ class TLClassifier(object):
             'final_result:0')
 
     def get_classification(self, img):
-
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        #img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) - not required unless reading input via cv2
         img = cv2.resize(img, (224, 224))
         img = np.expand_dims(img, axis=0)
+        ###### Normalization code ########
+        input_mean = 0
+        input_std = 255
+        img = img.astype(float)
+        normalized = tf.divide(tf.subtract(img, [input_mean]), [input_std])
+        sess = tf.Session()
+        img_norm = sess.run(normalized)
+        ######## Normalization code - End ########
         with self.detection_graph.as_default():
             pred_class = self.sess.run(
-                self.tl_class, feed_dict={self.input_img: img})
+                self.tl_class, feed_dict={self.input_img: img_norm})
             float_formatter = lambda x: "%.2f" % x
             rospy.logdebug("predicyion class: %s", pred_class)
 
