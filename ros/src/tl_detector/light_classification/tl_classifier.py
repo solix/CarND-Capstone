@@ -21,7 +21,7 @@ class TLClassifier(object):
 
     def __init__(self, *args):
         self.detection = 0
-        model = 'light_classification/retrained_graph_x.pb'
+        model = 'light_classification/retrained_graph.pb'
         self.detection_graph = tf.Graph()
         config = tf.ConfigProto()
         config.gpu_options.allow_growth = True
@@ -51,4 +51,9 @@ class TLClassifier(object):
             rospy.logdebug("predicyion class: %s", pred_class)
 
         self.detection = np.argmax(pred_class)
-        return self.detection
+
+        if(pred_class[0][np.argmax(pred_class)] > 0.3):
+
+            return self.detection
+
+        return -1
