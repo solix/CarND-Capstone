@@ -56,12 +56,23 @@ class TLClassifier(object):
             pred_class = self.sess.run(
                 self.tl_class, feed_dict={self.input_img: img_norm})
             float_formatter = lambda x: "%.2f" % x
-            rospy.logdebug("predicyion class: %s", pred_class)
+            # rospy.logdebug("predicyion class: %s", pred_class)
 
         self.detection = np.argmax(pred_class)
 
         if(pred_class[0][np.argmax(pred_class)] > 0.3):
 
-            return self.detection
+            if self.detection == 0:
+                rospy.logdebug('UNKNOWN ')
+                return TrafficLight.UNKNOWN
+            elif self.detection == 1:
+                rospy.logdebug('GREEN')
+                return TrafficLight.GREEN
+            elif(self.detection == 2):
+                rospy.logdebug('YELLOW')
+                return TrafficLight.YELLOW
+            elif(self.detection == 3):
+                rospy.logdebug('RED')
+                return TrafficLight.RED
 
-        return -1
+        return TrafficLight.unknown
