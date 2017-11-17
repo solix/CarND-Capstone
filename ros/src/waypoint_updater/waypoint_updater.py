@@ -228,8 +228,12 @@ class WaypointUpdater(object):
         # Calculate the difference between current speed and final target speed
         diff_index = self.traffic_index - self.next_waypoint_index
 
+        # Prevent negative index
+        if diff_index < 0:
+            diff_index = 0
+
         # Calculate how much the velocity should be reduced per waypoint
-        diff_velocity = self.curr_velocity / (abs(diff_index + 1))
+        diff_velocity = self.curr_velocity / (diff_index + 1)
 
         new_velocity = self.curr_velocity
 
