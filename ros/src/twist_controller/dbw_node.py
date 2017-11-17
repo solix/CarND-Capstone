@@ -96,7 +96,8 @@ class DBWNode(object):
         self.previous_time = 0.
         
         #create a reset fall back solution
-        self.dbw_reset()
+        # TODO: this is redundant because the values are already initialized above
+        # self.dbw_reset() 
         
         #declare everything above loop        
         self.loop()
@@ -107,13 +108,29 @@ class DBWNode(object):
     def dbw_reset(self):
         self.controller_twist.reset()   #reset the controllers
         # Reseting all the variables of the class
-        self.current_linear = 0.
+        
+        # TODO: Resetting current_linear to zero is not correct: it is not
+        # related to dbw state. If cyclic loop() is executed before a new
+        # value of current_linear is received, the controllers receive a
+        # wrong value and therefore can only calculate wrong controller outputs
+        # self.current_linear = 0.    
+        
         self.elapsed_time = 0.
-        self.dbw_enabled = False
+        
+        # TODO: this is not logical: the variable that triggers
+        # the reset is set in the reset function
+        # self.dbw_enabled = False 
+        
         # set previous time to now so that we can caculate elapsed time for PID when available
         self.previous_time = rospy.get_time()
-        self.angular_velocity = 0.
-        self.linear_velocity = 0.
+        
+        # TODO: same as above: Resetting angular_velocity and linear_velocity
+        # to zero is not correct: it is not related to dbw state. If cyclic 
+        # loop() is executed before new values for angular_velocity and 
+        # linear_velocity are received, the controllers receive wrong values
+        # and therefore can only calculate wrong controller outputs
+        # self.angular_velocity = 0.
+        # self.linear_velocity = 0.
  
     # Callback function to set the current velocity of the car
     # Information provided by ros topic '/current_velocity'
@@ -135,6 +152,11 @@ class DBWNode(object):
     def dbw_enabled_cb(self, msg):
         # Reset the controllers if safety driver takes control  
         # transition from autonomous to safety driver is handled in loop()
+        # TODO: as in the previous implementation it should be sufficient
+        # to reset only if value changes from False to True
+        if self.dbw_enabled == False and msg.data == True:
+            self.dbw_reset()
+
         self.dbw_enabled = msg.data
 
     ### End: Callback functions for subsribers to ROS topics
@@ -150,11 +172,11 @@ class DBWNode(object):
             # Only publish the control commands if dbw is enabled
             #rospy.logwarn('DBW is %s \n\n\n', self.dbw_enabled)
             if self.dbw_enabled:
-            # Get steering data from the control system
+                # Get steering data from the control system
                 steer = self.controller_yaw.get_steering(
-                self.linear_velocity, 
-                self.angular_velocity, 
-                self.current_linear)
+                    self.linear_velocity, 
+                    self.angular_velocity, 
+                    self.current_linear)
                 # Apply low pass to steering data
                 steer = self.low_pass_filter.filt(steer)
                 # Update timing information
@@ -164,8 +186,8 @@ class DBWNode(object):
                 
                 # Get throttle/brake data from the control system
                 throttle, brake = self.controller_twist.control(
-                self.current_linear, self.linear_velocity,
-                self.elapsed_time)
+                    self.current_linear, self.linear_velocity,
+                    self.elapsed_time)
                 # Calculate the final braking torque which has to be published
                 brake_torque = (self.vehicle_mass + self.fuel_capacity * GAS_DENSITY) * brake * self.wheel_radius
                 
@@ -173,6 +195,12 @@ class DBWNode(object):
                 # if the control system is enabled
                 self.publish(throttle, brake_torque, steer)
             else:
+                # TODO: this is inefficient: it should be sufficient to reset
+                # the controllers only on the transition from manual to 
+                # autonomous as it does no harm to accumulate the errors
+                # while the controller values are not published
+                # suggested solution: reset in dbw_enabled_cb if value changes
+                # from False to True
                 self.dbw_reset()
             
             rate.sleep()
