@@ -50,7 +50,7 @@ class WaypointUpdater(object):
         self.final_waypoints =  None                                # final waypoints to publish for other nodes
         self.tree = None                                            # tree struct for coordinates
         self.curr_velocity = None                                   # current velocity    
-        self.max_velocity = None				                        # Value for max velocity        
+        self.max_velocity = None                                        # Value for max velocity        
         self.next_waypoint_index  = None                             # Index of the first waypoint in front of the car
         self.traffic_index = None
         self.max_velocity =  rospy.get_param("/waypoint_loader/velocity", MAX_VEL)      # Max. velocity from gotten from ros parameters
@@ -231,13 +231,13 @@ class WaypointUpdater(object):
                 if new_velocity < 0.1:
                     new_velocity = 0
                 
-                waypoint_velocities.append(new_velocity)
+                waypoint_velocities.append(new_velocity * 0.55) # TODO: find better solution
             # After traffic sign -> set all to zero
             else:
                 waypoint_velocities.append(0)
 
         if PRINT_DEBUG:
-            rospy.logwarn('Current v: %.2f mph, target v: %.2f:%.2f:%.2f:%.2f:%.2f (mph).', self.curr_velocity * 2.23694, waypoint_velocities[0] * 2.23694, waypoint_velocities[1] * 2.23694, waypoint_velocities[2] * 2.23694, waypoint_velocities[3] * 2.23694, waypoint_velocities[4] * 2.23694)
+            rospy.logwarn('Brake!! Current v: %.2f mph, target v: %.2f:%.2f:%.2f:%.2f:%.2f (mph).', self.curr_velocity * 2.23694, waypoint_velocities[0] * 2.23694, waypoint_velocities[1] * 2.23694, waypoint_velocities[2] * 2.23694, waypoint_velocities[3] * 2.23694, waypoint_velocities[4] * 2.23694)
 
         return waypoint_velocities   
 
@@ -251,7 +251,7 @@ class WaypointUpdater(object):
                 waypoint_velocities.append(0)
 
         if PRINT_DEBUG:
-            rospy.logwarn('Current v: %.2f mph, target v: %.2f:%.2f:%.2f:%.2f:%.2f (mph).', self.curr_velocity * 2.23694, waypoint_velocities[0] * 2.23694, waypoint_velocities[1] * 2.23694, waypoint_velocities[2] * 2.23694, waypoint_velocities[3] * 2.23694, waypoint_velocities[4] * 2.23694)
+            rospy.logwarn('Speed Zero!! Current v: %.2f mph, target v: %.2f:%.2f:%.2f:%.2f:%.2f (mph).', self.curr_velocity * 2.23694, waypoint_velocities[0] * 2.23694, waypoint_velocities[1] * 2.23694, waypoint_velocities[2] * 2.23694, waypoint_velocities[3] * 2.23694, waypoint_velocities[4] * 2.23694)
 
         return waypoint_velocities
 
@@ -284,7 +284,7 @@ class WaypointUpdater(object):
                 waypoint_velocities.append(self.max_velocity)
 
         if PRINT_DEBUG:
-            rospy.logwarn('Current v: %.2f mph, target v: %.2f:%.2f:%.2f:%.2f:%.2f (mph).', self.curr_velocity * 2.23694, waypoint_velocities[0] * 2.23694, waypoint_velocities[1] * 2.23694, waypoint_velocities[2] * 2.23694, waypoint_velocities[3] * 2.23694, waypoint_velocities[4] * 2.23694)
+            rospy.logwarn('Speed up!! Current v: %.2f mph, target v: %.2f:%.2f:%.2f:%.2f:%.2f (mph).', self.curr_velocity * 2.23694, waypoint_velocities[0] * 2.23694, waypoint_velocities[1] * 2.23694, waypoint_velocities[2] * 2.23694, waypoint_velocities[3] * 2.23694, waypoint_velocities[4] * 2.23694)
 
         return waypoint_velocities
 
@@ -305,7 +305,7 @@ class WaypointUpdater(object):
                 waypoint_velocities.append(0)
 
         if PRINT_DEBUG:
-            rospy.logwarn('Current v: %.2f mph, target v: %.2f:%.2f:%.2f:%.2f:%.2f (mph).', self.curr_velocity * 2.23694, waypoint_velocities[0] * 2.23694, waypoint_velocities[1] * 2.23694, waypoint_velocities[2] * 2.23694, waypoint_velocities[3] * 2.23694, waypoint_velocities[4] * 2.23694)
+            rospy.logwarn('Move slowly:  Current v: %.2f mph, target v: %.2f:%.2f:%.2f:%.2f:%.2f (mph).', self.curr_velocity * 2.23694, waypoint_velocities[0] * 2.23694, waypoint_velocities[1] * 2.23694, waypoint_velocities[2] * 2.23694, waypoint_velocities[3] * 2.23694, waypoint_velocities[4] * 2.23694)
 
         return waypoint_velocities
 
@@ -331,7 +331,7 @@ class WaypointUpdater(object):
             # No traffic light within safety distance -> speed up to speed limit
             if(distance_to_traffic_waypoint > SAFETY_DISTANCE_FOR_BRAKING):
                 if PRINT_DEBUG:
-                    rospy.logwarn('No traffic light within %d m -> Speed up.', SAFETY_DISTANCE_FOR_BRAKING)
+                    rospy.logwarn('No red traffic light within %d m -> Speed up.', SAFETY_DISTANCE_FOR_BRAKING)
                 waypoint_velocities = self.speed_up_to_max()  
 
             # There is a traffic light within the safety distance
