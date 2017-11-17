@@ -148,7 +148,7 @@ class DBWNode(object):
         while not rospy.is_shutdown():
             # Get predicted throttle, brake, and steering
             # Only publish the control commands if dbw is enabled
-            rospy.logwarn('DBW is %s \n\n\n', self.dbw_enabled)
+            #rospy.logwarn('DBW is %s \n\n\n', self.dbw_enabled)
             if self.dbw_enabled:
             # Get steering data from the control system
                 steer = self.controller_yaw.get_steering(
