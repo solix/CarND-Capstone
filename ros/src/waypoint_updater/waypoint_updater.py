@@ -160,12 +160,18 @@ class WaypointUpdater(object):
                 y = self.curr_pose.position.y
                 
                 # Calculate the orientation and the angle
+                # TODO: in my opinion this is not correct because the actual 
+                # orientation of ego vehicle is ignored
                 orient = math.atan2((actual_wp_y - y ),(actual_wp_x-x))
-                angle = abs(0 - orient)
+                angle = abs(0 - orient) # TODO: this line is redundant
                 
                 # Check if idx point is behind or in front of car
                 # If behind take the next waypoint,
                 # to get the closest waypoint which is in front of the car
+                # TODO: in my opinion this is not correct because the actual 
+                # orientation of ego vehicle is ignored
+                # suggested solution: transform waypoint to local coordinates
+                # and advance to next waypoint if x is negative  
                 if angle > math.pi / 4:
                     idx += 1
                 
