@@ -21,7 +21,7 @@ class TLClassifier(object):
 
     def __init__(self, *args):
         self.detection = 0
-        model = 'light_classification/retrained_graph.pb'
+        model = 'light_classification/rounded_graph.pb'
         self.detection_graph = tf.Graph()
         config = tf.ConfigProto()
         config.gpu_options.allow_growth = True
@@ -75,4 +75,4 @@ class TLClassifier(object):
                 rospy.logdebug('RED')
                 return TrafficLight.RED
 
-        return TrafficLight.unknown
+        return TrafficLight.UNKNOWN
