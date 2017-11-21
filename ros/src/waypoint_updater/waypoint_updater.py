@@ -26,7 +26,7 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 50 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 50 # Number of waypoints to publish
 ACC_WPS_NUM = 4 # Number of waypoints used for acceleration
 SAFETY_DISTANCE_FOR_BRAKING = 30 # Distance in m to brake before the traffic light
 
@@ -80,7 +80,7 @@ class WaypointUpdater(object):
         for pt in self.base_waypoints:
             b_xcor.append(pt.pose.pose.position.x)
             b_ycor.append(pt.pose.pose.position.y)
-        self.tree= KDTree(zip(b_xcor, b_ycor))
+        self.tree = KDTree(zip(b_xcor, b_ycor))
         
         #rospy.logwarn('Got %s base waypoints!',len(b_xcor))
         
@@ -148,29 +148,15 @@ class WaypointUpdater(object):
             if self.base_waypoints and self.curr_pose:
                 #rospy.logwarn('Entering the publisher now')
                 
-                # Get the distance and index of the closest waypoint (in front of the car)
-                dist,idx = self.tree.query((self.curr_pose.position.x,self.curr_pose.position.y))
-                
-                # Get x/y coordinates of the closest waypoint
-                actual_wp_x = self.base_waypoints[idx].pose.pose.position.x
-                actual_wp_y = self.base_waypoints[idx].pose.pose.position.y
-
-                # Get current x/y coordinates of the own car
-                x = self.curr_pose.position.x
-                y = self.curr_pose.position.y
-                
-                # Calculate the orientation and the angle
-                orient = math.atan2((actual_wp_y - y ),(actual_wp_x-x))
-                angle = abs(0 - orient)
-                
-                # Check if idx point is behind or in front of car
-                # If behind take the next waypoint,
-                # to get the closest waypoint which is in front of the car
-                if angle > math.pi / 4:
-                    idx += 1
+                closest_wp_idx = self.find_next_waypoint_idx(
+                                    self.base_waypoints,
+                                    self.tree,
+                                    self.curr_pose.position.x,
+                                    self.curr_pose.position.y,
+                                    self.curr_pose.orientation.w)
                 
                 ## Set the index of the closest waypoint in front of the car
-                self.next_waypoint_index = idx
+                self.next_waypoint_index = closest_wp_idx
                 #rospy.logwarn('Closest index is %s', self.next_waypoint_index )                
                 
                 # Get the values for velocities for the upcoming waypoints
@@ -182,7 +168,7 @@ class WaypointUpdater(object):
             rate.sleep()
 
     # Publish the next waypoints the car should follow
-    def publish(self,idx, value_waypoint_velocities):
+    def publish(self, idx, value_waypoint_velocities):
 
         # Create Lane object and set timestamp
         final_waypoints_msg = Lane()
@@ -366,6 +352,51 @@ class WaypointUpdater(object):
             dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
             wp1 = i
         return dist
+
+
+    # Find the index of closest waypoint (in front) in world waypoints for given position 
+    # @param waypoints: received waypoints from waypoint_loader
+    def find_next_waypoint_idx(self, waypoints, waypoint_tree, egoX, egoY, egoYaw):
+        wp_idx = 0
+        
+        if not waypoint_tree is None:
+            # Using search tree to find next waypoint idx
+            _, wp_idx = waypoint_tree.query((egoX, egoY))
+            
+            closest_wp = waypoints[wp_idx]
+            # Convert to cars local coordinate system
+            localX, _, _ = self.world_to_local(
+                egoX, egoY, egoYaw,
+                closest_wp.pose.pose.position.x,
+                closest_wp.pose.pose.position.y)
+            
+            # x axis points in direction of ego vehicle
+            # Waypoint in front
+            if localX > 0:
+                return wp_idx
+            
+            # Take first waypoint in front
+            wp_idx = (wp_idx + 1) % len(waypoints)
+
+        return wp_idx
+
+
+    # Transform given world coordinate into local coordinate:
+    # positive x points forward, positive y points left
+    # @return local x, y and relative angle to world point
+    def world_to_local(self, egoX, egoY, egoYaw, worldX, worldY):
+        # Translate
+        dX = worldX - egoX
+        dY = worldY - egoY
+        
+        # Rotate
+        localX = math.cos(-egoYaw) * dX + math.sin(-egoYaw) * dY
+        localY = -math.sin(-egoYaw) * dY + math.cos(-egoYaw) * dY
+        
+        # Calculate relative angle
+        relAngle = math.atan2(localY, localX)
+        
+        return localX, localY, relAngle
 
 
 if __name__ == '__main__':
