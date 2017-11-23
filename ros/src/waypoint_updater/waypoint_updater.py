@@ -45,14 +45,14 @@ class WaypointUpdater(object):
 
         self.base_waypoints = None                                  # base points coming from csv file                
         self.curr_pose = None                                       # current pose
-        self.traffic_pose = None                                    # position of the next traffic light (ground truth)
-        self.traffic_status = None                                  # status of the next traffic light (ground truth)
         self.final_waypoints =  None                                # final waypoints to publish for other nodes
         self.tree = None                                            # tree struct for coordinates
         self.curr_velocity = None                                   # current velocity    
-        self.max_velocity = None                                        # Value for max velocity        
-        self.next_waypoint_index  = None                             # Index of the first waypoint in front of the car
+        self.max_velocity = None                                    # Value for max velocity        
+        self.next_waypoint_index  = None                            # Index of the first waypoint in front of the car
         self.traffic_index = None
+        
+        # Get max velocity from the waypoint_loader
         self.max_velocity =  rospy.get_param("/waypoint_loader/velocity", MAX_VEL)      # Max. velocity from gotten from ros parameters
         
         # if we get value from ros, convert it from km/h to meter per second (mps)
@@ -71,7 +71,7 @@ class WaypointUpdater(object):
         # Set the waypoints only once
         if not self.base_waypoints:
             self.base_waypoints = wp.waypoints  
-            rospy.logwarn('Got the base points')        
+            rospy.logwarn('Got the base points for waypoint_updater.')        
         
         # Get the x/y coordinates of the base_waypoints
         b_xcor = []
@@ -84,17 +84,17 @@ class WaypointUpdater(object):
         
         #rospy.logwarn('Got %s base waypoints!',len(b_xcor))
         
-        # Subscribe to topic '/current_pose' to get the locations to stop for red traffic lights
+        # Subscribe to topic '/traffic_waypoint' to get the locations to stop for red traffic lights
         rospy.Subscriber('/traffic_waypoint', Int32 ,self.traffic_cb)
         
         # TODO: Include if obstacle detection implementation is included later on
         #rospy.Subscriber('/obstacle_waypoint',,self.obstacle_cb)
         
-        # Set the publisher to write messages to topic '/final_waypoints'
+        # Create the publisher to write messages to topic '/final_waypoints'
         # The next waypoints the car has to follow are published
         self.final_waypoints_pub = rospy.Publisher('/final_waypoints', Lane, queue_size=1)
 
-        # rospy.spin()
+        # Run the loop the handle action
         self.loop_n_sleep()
 
 
@@ -112,7 +112,7 @@ class WaypointUpdater(object):
         self.curr_pose = msg.pose
 
     # Callback function to get the locations to stop for red traffic lights
-    # Information provided by ros topic '/current_velocity'
+    # Information provided by ros topic '/traffic_waypoint'
     def traffic_cb(self, msg):
         self.traffic_index = msg.data
 
@@ -211,13 +211,13 @@ class WaypointUpdater(object):
 
         for i in range(LOOKAHEAD_WPS):
             # Before traffic sign
-            if i <= diff_index:
+            if i < diff_index:
                 new_velocity -= diff_velocity
                 # If targe velocity is really small -> set to zero
                 if new_velocity < 0.1:
                     new_velocity = 0
                 
-                waypoint_velocities.append(new_velocity * 0.55) # TODO: find better solution
+                waypoint_velocities.append(new_velocity * 0.7) # TODO: find better solution
             # After traffic sign -> set all to zero
             else:
                 waypoint_velocities.append(0)
@@ -283,8 +283,8 @@ class WaypointUpdater(object):
         diff_index = self.traffic_index - self.next_waypoint_index
 
         for i in range(LOOKAHEAD_WPS):
-            # Before traffic sign
-            if i <= diff_index: 
+            # Before traffic sign idx -1 (Stop one waypoint before stop line SAFETY)
+            if i < diff_index - 1: 
                 waypoint_velocities.append(1)
             # After traffic sign
             else:
@@ -325,8 +325,7 @@ class WaypointUpdater(object):
             else:
                 # The car is really slow but has not reached the stop line
                 # Move slowly to the stop line
-                # TODO: Find better solution
-                if distance_to_traffic_waypoint > 5 and self.curr_velocity < 2:
+                if self.curr_velocity < 2:
                     if PRINT_DEBUG:
                         rospy.logwarn('Move slowly to stopping point!')
                     waypoint_velocities = self.move_slowly_to_waypoint()
@@ -372,7 +371,7 @@ class WaypointUpdater(object):
             
             # x axis points in direction of ego vehicle
             # Waypoint in front
-            if localX > 0:
+            if localX >= 0:
                 return wp_idx
             
             # Take first waypoint in front
