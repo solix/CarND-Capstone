@@ -45,8 +45,8 @@ class TwistController(object):
         #self.throttle_low_pass = LowPassFilter(0.2, .1)
 
         # Output of brake-PID covers deceleration in range of 0..-5 m/s^2
-        self.brake_pid = PID(0.35, 0.01, 0.0,    # p, i, d
-                                0.0, -self.decel_limit)          # min, max
+        self.brake_pid = PID(0.35, 0.01, 0.0,           # p, i, d
+                             0.1, 0.25) #0.0, -self.decel_limit)    # min, max
         #self.brake_low_pass = LowPassFilter(0.2, .1)
         
         
