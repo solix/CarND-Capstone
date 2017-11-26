@@ -144,7 +144,7 @@ class DBWNode(object):
         # TODO !!!!!!!!!!!!!!!!!!
         # TODO set to 50Hz for final solution
         # TODO set to 5Hz for testing issues
-        rate = rospy.Rate(5)
+        rate = rospy.Rate(10)
         while not rospy.is_shutdown():
             # Get predicted throttle, brake, and steering
             # Only publish the control commands if dbw is enabled
@@ -166,12 +166,14 @@ class DBWNode(object):
                 throttle, brake = self.controller_twist.control(
                 self.current_linear, self.linear_velocity,
                 self.elapsed_time)
+                
                 # Calculate the final braking torque which has to be published
                 brake_torque = (self.vehicle_mass + self.fuel_capacity * GAS_DENSITY) * brake * self.wheel_radius
                 
                 # Only publish the commands for throttle, brake and steering
                 # if the control system is enabled
-                self.publish(throttle, brake_torque, steer)
+                #self.publish(throttle, brake_torque, steer)
+                self.publish(throttle, brake, steer)
             else:
                 self.dbw_reset()
             
