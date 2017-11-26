@@ -26,6 +26,15 @@ class TLDetector(object):
         self.camera_image = None
         self.tree = None
         self.lights = []
+        self.bridge = CvBridge()
+        self.light_classifier = TLClassifier()
+        self.listener = tf.TransformListener()
+
+        self.state = TrafficLight.UNKNOWN
+        self.last_state = TrafficLight.UNKNOWN
+        self.last_wp = -1
+        self.state_count = 0
+        self.datasize = 0
 
         # Subscribe to topic '/current_pose' to get the current position of the car
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
@@ -62,15 +71,6 @@ class TLDetector(object):
         # Create the publisher to write messages to topic '/traffic_waypoint'
         # The index of the waypoint which is closest to the next red traffic light has to be published
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
-
-        self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
-        self.listener = tf.TransformListener()
-
-        self.state = TrafficLight.UNKNOWN
-        self.last_state = TrafficLight.UNKNOWN
-        self.last_wp = -1
-        self.state_count = 0
 
         # Block until shutdown -> Tasks are handled with callbacks
         rospy.spin()
