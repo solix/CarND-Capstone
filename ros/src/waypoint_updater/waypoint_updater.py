@@ -32,7 +32,7 @@ SAFETY_DISTANCE_FOR_BRAKING = 30 # Distance in m to brake before the traffic lig
 
 PRINT_DEBUG = False # Print rospy.logwarn for debugging if True
 
-RATE = 2    # update rate
+RATE = 10 # 2  # update rate: use 10 Hz because positions are received at 10 Hz
 MAX_VEL = 3.   # max velocity in mps
 
 class WaypointUpdater(object):
