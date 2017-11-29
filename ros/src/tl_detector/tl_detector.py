@@ -209,7 +209,7 @@ class TLDetector(object):
                                         self.curr_pose.orientation.w)
            
             # Check if idx is ahead of us and is closest
-            if (idx >= car_position_idx) and (idx < stop_line_idx):
+            if (idx >= car_position_idx) and (idx <= stop_line_idx):
                 stop_line_idx = idx         # if yes, this is our closest stop line
                 found_idx = i
                 break

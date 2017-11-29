@@ -183,7 +183,9 @@ class WaypointUpdater(object):
         #rospy.logwarn(value_waypoint_velocities[0]*2.23694)
         
         for i in range(LOOKAHEAD_WPS):
-            self.set_waypoint_velocity(self.final_waypoints[i], value_waypoint_velocities[i])      
+            # Only set velocity till all waypoints are used
+            if(i < len(self.final_waypoints)):
+                self.set_waypoint_velocity(self.final_waypoints[i], value_waypoint_velocities[i])      
         
         # Set waypoints in waypoint message
         final_waypoints_msg.waypoints = self.final_waypoints
