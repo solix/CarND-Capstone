@@ -95,9 +95,6 @@ class DBWNode(object):
         self.elapsed_time = 0.
         self.previous_time = 0.
         
-        #create a reset fall back solution
-        self.dbw_reset()
-        
         #declare everything above loop        
         self.loop()
   
@@ -105,15 +102,17 @@ class DBWNode(object):
     ### Begin: Callback and helper functions for subsribers to ROS topics
     
     def dbw_reset(self):
-        self.controller_twist.reset()   #reset the controllers
-        # Reseting all the variables of the class
-        self.current_linear = 0.
+        if PRINT_DEBUG:
+            rospy.logwarn('--- Reset controllers')
+
+        # Reset the controllers
+        self.controller_twist.reset()   
+        
+        # Reseting elapsed time
         self.elapsed_time = 0.
-        self.dbw_enabled = False
-        # set previous time to now so that we can caculate elapsed time for PID when available
+        
+        # Set previous time to now so that we can caculate elapsed time for PID when available
         self.previous_time = rospy.get_time()
-        self.angular_velocity = 0.
-        self.linear_velocity = 0.
  
     # Callback function to set the current velocity of the car
     # Information provided by ros topic '/current_velocity'
@@ -133,8 +132,11 @@ class DBWNode(object):
     # by the control system or a safety driver takes control
     # Information provided by ros topic '/vehicle/dbw_enabled'
     def dbw_enabled_cb(self, msg):
-        # Reset the controllers if safety driver takes control  
-        # transition from autonomous to safety driver is handled in loop()
+        # Reset the controllers if safety driver gives back control to dbw system
+        # Transition from autonomous to safety driver is handled in loop()
+        if self.dbw_enabled == False and msg.data == True:
+            self.dbw_reset()
+
         self.dbw_enabled = msg.data
 
     ### End: Callback functions for subsribers to ROS topics
@@ -147,8 +149,9 @@ class DBWNode(object):
         rate = rospy.Rate(5)
         while not rospy.is_shutdown():
             # Get predicted throttle, brake, and steering
-            # Only publish the control commands if dbw is enabled
-            #rospy.logwarn('DBW is %s \n\n\n', self.dbw_enabled)
+            # Only calculate and publish the control commands if dbw is enabled
+            
+            # rospy.logwarn('DBW is %s \n\n\n', self.dbw_enabled)
             if self.dbw_enabled:
             # Get steering data from the control system
                 steer = self.controller_yaw.get_steering(
@@ -172,8 +175,6 @@ class DBWNode(object):
                 # Only publish the commands for throttle, brake and steering
                 # if the control system is enabled
                 self.publish(throttle, brake_torque, steer)
-            else:
-                self.dbw_reset()
             
             rate.sleep()
 
