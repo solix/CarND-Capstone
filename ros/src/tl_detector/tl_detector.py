@@ -14,7 +14,7 @@ from scipy.spatial import KDTree
 import math
 
 STATE_COUNT_THRESHOLD = 3
-PRINT_DEBUG = False              # Print rospy.logwarn for debugging if True
+PRINT_DEBUG = False             # Print rospy.logwarn for debugging if True
 USE_GROUND_TRUTH_STATE = True   # True if traffic light state should be taken from ground truth data
 
 class TLDetector(object):
@@ -62,6 +62,7 @@ class TLDetector(object):
         # Create the publisher to write messages to topic '/traffic_waypoint'
         # The index of the waypoint which is closest to the next red traffic light has to be published
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
+        self.upcoming_red_light_state_pub = rospy.Publisher('/traffic_waypoint_state', Int32, queue_size=1)
 
         self.bridge = CvBridge()
         self.light_classifier = TLClassifier()
@@ -113,14 +114,18 @@ class TLDetector(object):
             self.state = state
         elif self.state_count >= STATE_COUNT_THRESHOLD:
             self.last_state = self.state
-            if state == TrafficLight.RED:
-                light_wp = light_wp  
-            else:
-                light_wp = -1
+            
+            #if state == TrafficLight.RED:
+            #    light_wp = light_wp  
+            #else:
+            #    light_wp = -1
+            
             self.last_wp = light_wp
             self.upcoming_red_light_pub.publish(Int32(light_wp))
+            self.upcoming_red_light_state_pub.publish(Int32(self.state))
         else:
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
+            self.upcoming_red_light_state_pub.publish(Int32(self.state))
         
         self.state_count += 1
 

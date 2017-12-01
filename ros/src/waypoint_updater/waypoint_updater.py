@@ -28,9 +28,10 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 
 LOOKAHEAD_WPS = 50 # Number of waypoints to publish
 ACC_WPS_NUM = 4 # Number of waypoints used for acceleration
-SAFETY_DISTANCE_FOR_BRAKING = 30 # Distance in m to brake before the traffic light
+SAFETY_DISTANCE_FOR_BRAKING = 100 # Distance in m to approach traffic lights
+SAFETY_SPEED_FOR_BRAKING = 10. # safety speed for approaching traffic lights
 
-PRINT_DEBUG = False # Print rospy.logwarn for debugging if True
+PRINT_DEBUG = True # Print rospy.logwarn for debugging if True
 
 RATE = 10 # 2  # update rate: use 10 Hz because positions are received at 10 Hz
 MAX_VEL = 3.   # max velocity in mps
@@ -51,6 +52,7 @@ class WaypointUpdater(object):
         self.max_velocity = None                                    # Value for max velocity        
         self.next_waypoint_index  = None                            # Index of the first waypoint in front of the car
         self.traffic_index = None
+        self.traffic_state = None
         
         # Get max velocity from the waypoint_loader
         self.max_velocity =  rospy.get_param("/waypoint_loader/velocity", MAX_VEL)      # Max. velocity from gotten from ros parameters
@@ -86,6 +88,7 @@ class WaypointUpdater(object):
         
         # Subscribe to topic '/traffic_waypoint' to get the locations to stop for red traffic lights
         rospy.Subscriber('/traffic_waypoint', Int32 ,self.traffic_cb)
+        rospy.Subscriber('/traffic_waypoint_state', Int32, self.traffic_state_cb);
         
         # TODO: Include if obstacle detection implementation is included later on
         #rospy.Subscriber('/obstacle_waypoint',,self.obstacle_cb)
@@ -115,6 +118,9 @@ class WaypointUpdater(object):
     # Information provided by ros topic '/traffic_waypoint'
     def traffic_cb(self, msg):
         self.traffic_index = msg.data
+        
+    def traffic_state_cb(self, msg):
+        self.traffic_state = msg.data
 
     # Callback function to get the position of obstacles
     # Information provided by ros topic '/obstacle_waypoint'
@@ -199,6 +205,7 @@ class WaypointUpdater(object):
         
         # Calculate the difference between current speed and final target speed
         diff_index = self.traffic_index - self.next_waypoint_index
+        rospy.logwarn('brake_till_traffic_waypoint: diff_index=%i', diff_index)
 
         # Prevent negative index
         if diff_index < 0:
@@ -213,7 +220,7 @@ class WaypointUpdater(object):
             # Before traffic sign
             if i < diff_index:
                 new_velocity -= diff_velocity
-                # If targe velocity is really small -> set to zero
+                # If target velocity is really small -> set to zero
                 if new_velocity < 0.1:
                     new_velocity = 0
                 
@@ -226,7 +233,27 @@ class WaypointUpdater(object):
             rospy.logwarn('Brake!! Current v: %.2f mph, target v: %.2f:%.2f:%.2f:%.2f:%.2f (mph).', self.curr_velocity * 2.23694, waypoint_velocities[0] * 2.23694, waypoint_velocities[1] * 2.23694, waypoint_velocities[2] * 2.23694, waypoint_velocities[3] * 2.23694, waypoint_velocities[4] * 2.23694)
 
         return waypoint_velocities   
-
+    
+    def approach_traffic_light(self):
+        ''' 
+        reduce speed if necessary to be prepared to stop in case traffic 
+        light turns red|yellow
+        '''
+        diff_index = self.traffic_index - self.next_waypoint_index
+        rospy.logwarn('approach_traffic_light: diff_index=%i', diff_index)
+        
+        # Prevent negative index
+        if diff_index < 0:
+            diff_index = 0
+        
+        # Array for waypoint velocities
+        waypoint_velocities = []
+        
+        for i in range(LOOKAHEAD_WPS):
+            waypoint_velocities.append(SAFETY_SPEED_FOR_BRAKING) # TODO: find better solution
+        
+        return waypoint_velocities
+        
     
     # Set the target velocity for all waypoints within LOOKAHEAD_WPS to zero
     def set_velocity_to_zero(self):
@@ -269,8 +296,8 @@ class WaypointUpdater(object):
             else:
                 waypoint_velocities.append(self.max_velocity)
 
-        if PRINT_DEBUG:
-            rospy.logwarn('Speed up!! Current v: %.2f mph, target v: %.2f:%.2f:%.2f:%.2f:%.2f (mph).', self.curr_velocity * 2.23694, waypoint_velocities[0] * 2.23694, waypoint_velocities[1] * 2.23694, waypoint_velocities[2] * 2.23694, waypoint_velocities[3] * 2.23694, waypoint_velocities[4] * 2.23694)
+        # if PRINT_DEBUG:
+        #     rospy.logwarn('Speed up!! Current v: %.2f mph, target v: %.2f:%.2f:%.2f:%.2f:%.2f (mph).', self.curr_velocity * 2.23694, waypoint_velocities[0] * 2.23694, waypoint_velocities[1] * 2.23694, waypoint_velocities[2] * 2.23694, waypoint_velocities[3] * 2.23694, waypoint_velocities[4] * 2.23694)
 
         return waypoint_velocities
 
@@ -291,7 +318,13 @@ class WaypointUpdater(object):
                 waypoint_velocities.append(0)
 
         if PRINT_DEBUG:
-            rospy.logwarn('Move slowly:  Current v: %.2f mph, target v: %.2f:%.2f:%.2f:%.2f:%.2f (mph).', self.curr_velocity * 2.23694, waypoint_velocities[0] * 2.23694, waypoint_velocities[1] * 2.23694, waypoint_velocities[2] * 2.23694, waypoint_velocities[3] * 2.23694, waypoint_velocities[4] * 2.23694)
+            rospy.logwarn('Move slowly:  Current v: %.2f mph, target v: %.2f:%.2f:%.2f:%.2f:%.2f (mph).', 
+                          self.curr_velocity * 2.23694, 
+                          waypoint_velocities[0] * 2.23694, 
+                          waypoint_velocities[1] * 2.23694, 
+                          waypoint_velocities[2] * 2.23694, 
+                          waypoint_velocities[3] * 2.23694, 
+                          waypoint_velocities[4] * 2.23694)
 
         return waypoint_velocities
 
@@ -302,44 +335,54 @@ class WaypointUpdater(object):
         waypoint_velocities = []
         
         # Check if necessary data is available
-        if(self.traffic_index and self.base_waypoints and self.next_waypoint_index and self.traffic_index):
-            # A red traffic light is in front of the car
-            # Calculate the distance between the waypoint directly in front of the the car 
-            # and the waypoint which the car should stop for the red traffic light
-            if(self.traffic_index > 0):
-                distance_to_traffic_waypoint = self.distance_between_waypoints(self.base_waypoints, self.next_waypoint_index, self.traffic_index)
-            else:
-                distance_to_traffic_waypoint = 999 # TODO: Find better solution
-
-            if PRINT_DEBUG:
-                rospy.logwarn('Distance between next waypoint %d and traffic_waypoint %d: %f m.', self.next_waypoint_index, self.traffic_index, distance_to_traffic_waypoint)
-
-            # No traffic light within safety distance -> speed up to speed limit
-            if(distance_to_traffic_waypoint > SAFETY_DISTANCE_FOR_BRAKING):
-                if PRINT_DEBUG:
-                    rospy.logwarn('No red traffic light within %d m -> Speed up.', SAFETY_DISTANCE_FOR_BRAKING)
-                waypoint_velocities = self.speed_up_to_max()  
-
-            # There is a traffic light within the safety distance
-            # Decide what to do
-            else:
-                # The car is really slow but has not reached the stop line
-                # Move slowly to the stop line
-                if self.curr_velocity < 2:
-                    if PRINT_DEBUG:
-                        rospy.logwarn('Move slowly to stopping point!')
-                    waypoint_velocities = self.move_slowly_to_waypoint()
-                # Brake to stop at the stop line
-                else:
-                    if PRINT_DEBUG:
-                        rospy.logwarn('Brake for traffic light!')
-                    waypoint_velocities = self.brake_till_traffic_waypoint()
-
-        # Necessary data is missing
-        else:
-            if PRINT_DEBUG:
-                rospy.logwarn('Data missing')
+        if self.traffic_index is None:
+            rospy.logwarn('traffic_index is None')
             waypoint_velocities = self.set_velocity_to_zero()
+        elif self.base_waypoints is None:
+            rospy.logwarn('base_waypoints is None')
+            waypoint_velocities = self.set_velocity_to_zero()
+        elif self.next_waypoint_index is None:
+            rospy.logwarn('next_waypoint_index is None')
+            waypoint_velocities = self.set_velocity_to_zero()
+        elif self.traffic_index is None:
+            rospy.logwarn('traffic_index is None')
+            waypoint_velocities = self.set_velocity_to_zero()
+        elif self.traffic_state is None:
+            rospy.logwarn('traffic_state is None')
+            waypoint_velocities = self.set_velocity_to_zero()
+        else:
+            distance_to_traffic_waypoint = self.distance_between_waypoints(
+                self.base_waypoints, 
+                self.next_waypoint_index, 
+                self.traffic_index)
+
+            if PRINT_DEBUG:
+                rospy.logwarn('Distance between next waypoint %d and traffic_waypoint %d: %f m.', 
+                              self.next_waypoint_index, 
+                              self.traffic_index, 
+                              distance_to_traffic_waypoint)
+            
+            if (distance_to_traffic_waypoint < SAFETY_DISTANCE_FOR_BRAKING):
+                # slow down to safety speed to prepare for braking OR
+                # brake for red/yellow traffic light
+            
+                if (self.traffic_state == 0 or self.traffic_state == 1):
+                    # A red or yellow traffic light is in front of the car
+                    if self.curr_velocity < 2:
+                        if PRINT_DEBUG:
+                            rospy.logwarn('Move slowly to stopping point!')
+                        waypoint_velocities = self.move_slowly_to_waypoint()
+                    else:
+                        rospy.logwarn('Brake for traffic light!')
+                        waypoint_velocities = self.brake_till_traffic_waypoint()
+                else:
+                    # approach traffic light with safety speed
+                    waypoint_velocities = self.approach_traffic_light()
+            else:
+                # No traffic light within safety distance -> speed up to speed limit
+                # if PRINT_DEBUG:
+                #    rospy.logwarn('No red/yellow traffic light within %d m -> Speed up.', SAFETY_DISTANCE_FOR_BRAKING)
+                waypoint_velocities = self.speed_up_to_max()  
             
         return waypoint_velocities
 
