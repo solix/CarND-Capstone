@@ -77,9 +77,17 @@ class TLClassifierx(object):
         return image_with_boxes
 
     def get_classification(self, img):
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        img_np = self.load_image_into_numpy_array(img)
-        img_np = np.expand_dims(img_np, axis=0)
+        # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) - not required unless
+        # reading input via cv2
+        img = cv2.resize(img, (224, 224))
+        img = np.expand_dims(img, axis=0)
+        ###### Normalization code ########
+        input_mean = 128
+        input_std = 128
+        img = img.astype(float)
+        normalized = tf.divide(tf.subtract(img, [input_mean]), [input_std])
+        sess = tf.Session()
+        img_norm = sess.run(normalized)
         with self.detection_graph.as_default():
             (boxes, scores, classes, num) = self.sess.run(
                 [self.tl_boxes, self.tl_scores,
@@ -95,8 +103,21 @@ class TLClassifierx(object):
                           str(classes[0][0]) + "-" + str(randint(0, 10)) + '.jpg', res)
 
         self.detection = classes[0][0]
-        # print("classified number : {} " .format(classes))
+        # print("classified number : {} " .format(classes))\
+        if(pred_class[0][np.argmax(pred_class)] > 0.3):
+            if self.detection == 0:
+                rospy.logdebug('UNKNOWN ')
+                return TrafficLight.UNKNOWN
+            elif self.detection == 1:
+                rospy.logdebug('GREEN')
+                return TrafficLight.GREEN
+            elif(self.detection == 2):
+                rospy.logdebug('YELLOW')
+                return TrafficLight.YELLOW
+            elif(self.detection == 3):
+                rospy.logdebug('RED')
+                return TrafficLight.RED
+
+        return TrafficLight.UNKNOWN
 
         return self.detection
-
-    # def classify_viz():
