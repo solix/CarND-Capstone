@@ -143,7 +143,7 @@ class DBWNode(object):
         # Set update rate (50Hz)
         # TODO !!!!!!!!!!!!!!!!!!
         # TODO set to 50Hz for final solution
-        rate = rospy.Rate(10) # position updates are received with 10 Hz
+        rate = rospy.Rate(50) # position updates are received with 10 Hz
         while not rospy.is_shutdown():
             # Get predicted throttle, brake, and steering
             # Only publish the control commands if dbw is enabled
