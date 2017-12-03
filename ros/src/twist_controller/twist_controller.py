@@ -40,13 +40,18 @@ class TwistController(object):
         # can be tuned separately.
         
         # Output of throttle-PID covers acceleration in range of 0..1 m/s^2
+        # test_dbw.py adaption: throttle-PID covers acceleration from 0% to 2.5%
         self.throttle_pid = PID(0.35, 0.01, 0.0,    # p, i, d
-                                0.0, self.accel_limit)          # min, max
+                                #0.0, self.accel_limit)          
+                                0.0, 0.25)         # min, max
         #self.throttle_low_pass = LowPassFilter(0.2, .1)
 
         # Output of brake-PID covers deceleration in range of 0..-5 m/s^2
+        # test_dbw.py adaption: Output of brake-PID covers range from 10% to 25%
+        # where 10% is the deadband of brake
         self.brake_pid = PID(0.35, 0.01, 0.0,           # p, i, d
-                             0.1, 0.25) #0.0, -self.decel_limit)    # min, max
+                             #0.0, -self.decel_limit)
+                             0.1, 0.25)                 # min, max
         #self.brake_low_pass = LowPassFilter(0.2, .1)
         
         

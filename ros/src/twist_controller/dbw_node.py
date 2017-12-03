@@ -143,8 +143,7 @@ class DBWNode(object):
         # Set update rate (50Hz)
         # TODO !!!!!!!!!!!!!!!!!!
         # TODO set to 50Hz for final solution
-        # TODO set to 5Hz for testing issues
-        rate = rospy.Rate(10)
+        rate = rospy.Rate(10) # position updates are received with 10 Hz
         while not rospy.is_shutdown():
             # Get predicted throttle, brake, and steering
             # Only publish the control commands if dbw is enabled
@@ -168,10 +167,7 @@ class DBWNode(object):
                 self.elapsed_time)
                 
                 # Calculate the final braking torque which has to be published
-                brake_torque = (self.vehicle_mass + self.fuel_capacity * GAS_DENSITY) * brake * self.wheel_radius
-                
-                # Only publish the commands for throttle, brake and steering
-                # if the control system is enabled
+                #brake_torque = (self.vehicle_mass + self.fuel_capacity * GAS_DENSITY) * brake * self.wheel_radius
                 #self.publish(throttle, brake_torque, steer)
                 self.publish(throttle, brake, steer)
             else:
@@ -202,7 +198,8 @@ class DBWNode(object):
 
         bcmd = BrakeCmd()
         bcmd.enable = True
-        bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
+        #bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
+        bcmd.pedal_cmd_type = BrakeCmd.CMD_PERCENT
         bcmd.pedal_cmd = brake
         self.brake_pub.publish(bcmd)
 
