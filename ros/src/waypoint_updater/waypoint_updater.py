@@ -26,15 +26,20 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 50 # Number of waypoints to publish
-ACC_WPS_NUM = 4 # Number of waypoints used for acceleration
-SAFETY_DISTANCE_FOR_BRAKING = 100 # Distance in m to approach traffic lights
-SAFETY_SPEED_FOR_BRAKING = 10. # safety speed for approaching traffic lights
 
-PRINT_DEBUG = True # Print rospy.logwarn for debugging if True
+RATE = 10           # update rate: use 10 Hz because positions are received at 10 Hz
 
-RATE = 10 # 2  # update rate: use 10 Hz because positions are received at 10 Hz
-MAX_VEL = 3.   # max velocity in mps
+LOOKAHEAD_WPS = 50      # Number of waypoints to publish
+ACC_WPS_NUM = 4         # Number of waypoints used for acceleration
+
+MAX_VEL_CARLA = 10.0   # default max velocity in kmph for Carla (param server provides speed in km/h)
+SAFETY_DISTANCE_FOR_BRAKING = 50                # distance to approach traffic lights 'ready for braking' in meters
+SAFETY_SPEED_FOR_BRAKING = MAX_VEL_CARLA / 3.6  # safety speed for approaching traffic lights in m/s
+
+MPS_AS_MPH = 2.23694 # meters per second as miles per hour (as provided in /current_velocity)
+
+PRINT_DEBUG = False  # Print rospy.logwarn for debugging if True
+
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -44,22 +49,19 @@ class WaypointUpdater(object):
 
         ########### Self parameters  ###############
 
-        self.base_waypoints = None                                  # base points coming from csv file                
-        self.curr_pose = None                                       # current pose
-        self.final_waypoints =  None                                # final waypoints to publish for other nodes
-        self.tree = None                                            # tree struct for coordinates
-        self.curr_velocity = None                                   # current velocity    
-        self.max_velocity = None                                    # Value for max velocity        
-        self.next_waypoint_index  = None                            # Index of the first waypoint in front of the car
-        self.traffic_index = None
-        self.traffic_state = None
+        self.base_waypoints = None            # base points coming from csv file                
+        self.curr_pose = None                 # current pose
+        self.final_waypoints =  None          # final waypoints to publish for other nodes
+        self.tree = None                      # tree struct for coordinates
+        self.curr_velocity = None             # current velocity    
+        self.max_velocity = None              # maximum allowed velocity in meters per second        
+        self.next_waypoint_index  = None      # Index of the first waypoint in front of the car
+        self.traffic_index = None             # waypoint index of next traffic light
+        self.traffic_state = None             # state of next traffic light
         
-        # Get max velocity from the waypoint_loader
-        self.max_velocity =  rospy.get_param("/waypoint_loader/velocity", MAX_VEL)      # Max. velocity from gotten from ros parameters
-        
-        # if we get value from ros, convert it from km/h to meter per second (mps)
-        if (self.max_velocity != MAX_VEL): 
-            self.max_velocity = (self.max_velocity * 1000) / 3600 
+        # Max. velocity from ros parameter server
+        max_vel = rospy.get_param("/waypoint_loader/velocity", MAX_VEL_CARLA)
+        self.max_velocity = self.kmph2mps(max_vel)       
         
         # Subscribe to topic '/current_pose' to get the current position of the car
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
@@ -105,7 +107,7 @@ class WaypointUpdater(object):
     ### Begin: Callback functions for subsribers to ROS topics
 
     # Callback function to set the current velocity of the car
-    # Information provided by ros topic '/current_velocity'
+    # Information provided by ros topic '/current_velocity' in meters per second
     def currvel_cb(self,msg):
         self.curr_velocity = msg.twist.linear.x
     
@@ -174,7 +176,7 @@ class WaypointUpdater(object):
             rate.sleep()
 
     # Publish the next waypoints the car should follow
-    def publish(self, idx, value_waypoint_velocities):
+    def publish(self, idx, waypoint_velocities):
 
         # Create Lane object and set timestamp
         final_waypoints_msg = Lane()
@@ -184,12 +186,12 @@ class WaypointUpdater(object):
         self.final_waypoints = deepcopy(self.base_waypoints[idx: idx + LOOKAHEAD_WPS])
 
         # for pt in self.final_waypoints:
-        #   rospy.logwarn('Next pointis %s %s ',pt.pose.pose.position.x, pt.pose.pose.position.y)
+        #   rospy.logwarn('Next point is %s %s ',pt.pose.pose.position.x, pt.pose.pose.position.y)
         
-        #rospy.logwarn(value_waypoint_velocities[0]*2.23694)
+        #rospy.logwarn(waypoint_velocities[0]*2.23694)
         
         for i in range(LOOKAHEAD_WPS):
-            self.set_waypoint_velocity(self.final_waypoints[i], value_waypoint_velocities[i])      
+            self.set_waypoint_velocity(self.final_waypoints[i], waypoint_velocities[i])      
         
         # Set waypoints in waypoint message
         final_waypoints_msg.waypoints = self.final_waypoints
@@ -230,7 +232,13 @@ class WaypointUpdater(object):
                 waypoint_velocities.append(0)
 
         if PRINT_DEBUG:
-            rospy.logwarn('Brake!! Current v: %.2f mph, target v: %.2f:%.2f:%.2f:%.2f:%.2f (mph).', self.curr_velocity * 2.23694, waypoint_velocities[0] * 2.23694, waypoint_velocities[1] * 2.23694, waypoint_velocities[2] * 2.23694, waypoint_velocities[3] * 2.23694, waypoint_velocities[4] * 2.23694)
+            rospy.logwarn('Brake!! Current v: %.2f mph, target v: %.2f:%.2f:%.2f:%.2f:%.2f (mph).', 
+                          self.curr_velocity * 2.23694, 
+                          waypoint_velocities[0] * 2.23694, 
+                          waypoint_velocities[1] * 2.23694, 
+                          waypoint_velocities[2] * 2.23694, 
+                          waypoint_velocities[3] * 2.23694, 
+                          waypoint_velocities[4] * 2.23694)
 
         return waypoint_velocities   
     
@@ -240,17 +248,27 @@ class WaypointUpdater(object):
         light turns red|yellow
         '''
         diff_index = self.traffic_index - self.next_waypoint_index
-        rospy.logwarn('approach_traffic_light: diff_index=%i', diff_index)
+        # rospy.logwarn('approach_traffic_light: diff_index=%i', diff_index)
         
         # Prevent negative index
-        if diff_index < 0:
-            diff_index = 0
+        if diff_index <= 0:
+            diff_index = 1
+            
+        delta_v = SAFETY_SPEED_FOR_BRAKING - self.curr_velocity
+        step_v = delta_v / diff_index 
         
         # Array for waypoint velocities
         waypoint_velocities = []
         
-        for i in range(LOOKAHEAD_WPS):
-            waypoint_velocities.append(SAFETY_SPEED_FOR_BRAKING) # TODO: find better solution
+        v = self.curr_velocity
+        for _ in range(LOOKAHEAD_WPS):
+            if v > SAFETY_SPEED_FOR_BRAKING:
+                v -= step_v
+            
+            if v < SAFETY_SPEED_FOR_BRAKING:
+                v = SAFETY_SPEED_FOR_BRAKING
+                
+            waypoint_velocities.append(v)
         
         return waypoint_velocities
         
@@ -439,6 +457,9 @@ class WaypointUpdater(object):
         relAngle = math.atan2(localY, localX)
         
         return localX, localY, relAngle
+
+    def kmph2mps(self, velocity_kmph):
+        return velocity_kmph / 3.6
 
 
 if __name__ == '__main__':
