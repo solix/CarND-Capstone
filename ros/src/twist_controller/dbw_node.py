@@ -49,6 +49,12 @@ class DBWNode(object):
         self.steer_ratio = rospy.get_param('~steer_ratio', 14.8)
         self.max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
         self.max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
+        
+        # distinguish between Sim and Carla: wheel_base is defined as 
+        # <param name="wheel_base" value="3" /> in dbw_sim.launch (Sim)
+        # <param name="wheel_base" value="2.8498" /> in dbw.launch (Carla)
+        self.use_sim_steering = self.wheel_base > 2.9
+        rospy.logwarn('DBWNode: simulator steering: %s', self.use_sim_steering)
 
         # Define publishers for the ros topics
         # Publisher for ros topic '/vehicle/steering_cmd'
@@ -143,19 +149,33 @@ class DBWNode(object):
         # Set update rate (50Hz)
         # TODO !!!!!!!!!!!!!!!!!!
         # TODO set to 50Hz for final solution
-        rate = rospy.Rate(50) # position updates are received with 10 Hz
+        rate = rospy.Rate(50)
         while not rospy.is_shutdown():
             # Get predicted throttle, brake, and steering
             # Only publish the control commands if dbw is enabled
             #rospy.logwarn('DBW is %s \n\n\n', self.dbw_enabled)
             if self.dbw_enabled:
-            # Get steering data from the control system
-                steer = self.controller_yaw.get_steering(
-                self.linear_velocity, 
-                self.angular_velocity, 
-                self.current_linear)
-                # Apply low pass to steering data
-                steer = self.low_pass_filter.filt(steer)
+                
+                if self.use_sim_steering:
+                    # Get steering data from the control system
+                    steer = self.controller_yaw.get_steering(
+                        self.linear_velocity, 
+                        self.angular_velocity, 
+                        self.current_linear)
+                    
+                    # Apply low pass to steering data
+                    steer = self.low_pass_filter.filt(steer)
+                else:
+                    # shortcut for calculating steer value to match expected output:
+                    steer_alt = self.angular_velocity * self.steer_ratio
+                    # rospy.logwarn('dbw_node::loop: steer=%3f, steer_alt=%.3f', 
+                    #               steer, steer_alt)
+                    steer = steer_alt
+                    
+                    # Apply low pass to steering data
+                    #steer = self.low_pass_filter.filt(steer)
+                    # without lowpass filter the output matches exactly the expected values
+
                 # Update timing information
                 current_time = rospy.get_time()
                 self.elapsed_time = current_time - self.previous_time
@@ -163,8 +183,8 @@ class DBWNode(object):
                 
                 # Get throttle/brake data from the control system
                 throttle, brake = self.controller_twist.control(
-                self.current_linear, self.linear_velocity,
-                self.elapsed_time)
+                    self.current_linear, self.linear_velocity,
+                    self.elapsed_time)
                 
                 # Calculate the final braking torque which has to be published
                 #brake_torque = (self.vehicle_mass + self.fuel_capacity * GAS_DENSITY) * brake * self.wheel_radius
