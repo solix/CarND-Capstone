@@ -56,7 +56,8 @@ class TLDetector(object):
         if not self.base_waypoints:
             self.base_waypoints = wp.waypoints
             self.datasize = len(self.base_waypoints)
-            rospy.logwarn('Got the base points for tl_detector.')        
+            if PRINT_DEBUG:
+                rospy.logwarn('Got the base points for tl_detector.')        
         
         # Get the x/y coordinates of the base_waypoints
         b_xcor = []
@@ -71,6 +72,10 @@ class TLDetector(object):
         # Create the publisher to write messages to topic '/traffic_waypoint'
         # The index of the waypoint which is closest to the next red traffic light has to be published
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
+
+        # Create the publisher to write messages to topic '/traffic_waypoint_state'
+        # The state of the closest red traffic light has to be published
+        self.upcoming_red_light_state_pub = rospy.Publisher('/traffic_waypoint_state', Int32, queue_size=1)
 
         # Block until shutdown -> Tasks are handled with callbacks
         rospy.spin()
@@ -113,14 +118,12 @@ class TLDetector(object):
             self.state = state
         elif self.state_count >= STATE_COUNT_THRESHOLD:
             self.last_state = self.state
-            if state == TrafficLight.RED:
-                light_wp = light_wp  
-            else:
-                light_wp = -1
             self.last_wp = light_wp
             self.upcoming_red_light_pub.publish(Int32(light_wp))
+            self.upcoming_red_light_state_pub.publish(Int32(self.state))
         else:
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
+            self.upcoming_red_light_state_pub.publish(Int32(self.last_state))
         
         self.state_count += 1
 
