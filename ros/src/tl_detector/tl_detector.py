@@ -6,7 +6,7 @@ from styx_msgs.msg import TrafficLightArray, TrafficLight
 from styx_msgs.msg import Lane
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
-from light_classification.tl_classifier import TLClassifier
+from light_classification.tl_classifierx import TLClassifierx
 import tf
 import cv2
 import yaml
@@ -14,7 +14,7 @@ from scipy.spatial import KDTree
 import math
 
 STATE_COUNT_THRESHOLD = 3
-PRINT_DEBUG = False              # Print rospy.logwarn for debugging if True
+PRINT_DEBUG = True         # Print rospy.logwarn for debugging if True
 # True if traffic light state should be taken from ground truth data
 USE_GROUND_TRUTH_STATE = False
 
@@ -73,10 +73,10 @@ class TLDetector(object):
         # The index of the waypoint which is closest to the next red traffic
         # light has to be published
         self.upcoming_red_light_pub = rospy.Publisher(
-            '/traffic_waypoint', Int32, queue_size=1)
+            '/traffic_waypoint', Int32, queue_size=0)
 
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
+        self.light_classifier = TLClassifierx()
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN

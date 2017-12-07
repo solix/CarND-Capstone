@@ -21,7 +21,6 @@ import PIL.ImageFont as ImageFont
 import six
 import rospy
 import scipy.misc
-import viz_util
 from random import *
 
 """
@@ -92,18 +91,11 @@ class TLClassifierx(object):
             (boxes, scores, classes, num) = self.sess.run(
                 [self.tl_boxes, self.tl_scores,
                     self.tl_classes, self.num_detections],
-                feed_dict={self.input_img: img_np})
+                feed_dict={self.input_img: img_norm})
 
-        rospy.logdebug("[light] box found: %s ", boxes[0][0])
-        rospy.logdebug("[light] classes found: %s ", classes[0][0])
 
-        res = cv2.rectangle(img, (boxes[0][0, 0], boxes[0][0, 1]), (boxes[
-                            0][0, 2] - boxes[0][0, 0], boxes[0][0, 3] - boxes[0][0, 1]), (255, 0, 0), 5)
-        scipy.misc.imsave('./light_classification/data/res/out' +
-                          str(classes[0][0]) + "-" + str(randint(0, 10)) + '.jpg', res)
 
         self.detection = classes[0][0]
-        # print("classified number : {} " .format(classes))\
         if(pred_class[0][np.argmax(pred_class)] > 0.3):
             if self.detection == 0:
                 rospy.logdebug('UNKNOWN ')

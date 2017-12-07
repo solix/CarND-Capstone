@@ -60,7 +60,7 @@ class TLClassifier(object):
 
         self.detection = np.argmax(pred_class)
 
-        if(pred_class[0][np.argmax(pred_class)] > 0.3):
+        if(pred_class[0][np.argmax(pred_class)] > 0.6):
 
             if self.detection == 0:
                 rospy.logdebug('UNKNOWN ')
