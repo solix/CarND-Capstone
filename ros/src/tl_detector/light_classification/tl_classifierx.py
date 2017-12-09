@@ -96,7 +96,7 @@ class TLClassifierx(object):
 
 
         self.detection = classes[0][0]
-        if(pred_class[0][np.argmax(pred_class)] > 0.3):
+        if(classes[0][np.argmax(classes)] > 0.3):
             if self.detection == 0:
                 rospy.logdebug('UNKNOWN ')
                 return TrafficLight.UNKNOWN
