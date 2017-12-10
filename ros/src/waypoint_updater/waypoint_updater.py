@@ -264,7 +264,7 @@ class WaypointUpdater(object):
         if diff_index <= 0:
             diff_index = 1
             
-        delta_v = SAFETY_SPEED_FOR_BRAKING - self.curr_velocity
+        delta_v = self.curr_velocity - SAFETY_SPEED_FOR_BRAKING
         step_v = delta_v / diff_index 
         
         # Array for waypoint velocities
