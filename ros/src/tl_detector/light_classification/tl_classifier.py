@@ -40,7 +40,8 @@ class TLClassifier(object):
             'final_result:0')
 
     def get_classification(self, img):
-        # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) - not required unless
+	#rospy.logwarn('########## CALLING CLASSIFIER #########')
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) #- not required unless
         # reading input via cv2
         img = cv2.resize(img, (224, 224))
         img = np.expand_dims(img, axis=0)
@@ -60,19 +61,19 @@ class TLClassifier(object):
 
         self.detection = np.argmax(pred_class)
 
-        if(pred_class[0][np.argmax(pred_class)] > 0.6):
+        if(pred_class[0][np.argmax(pred_class)] > 0.3):
 
             if self.detection == 0:
-                rospy.logdebug('UNKNOWN ')
+                rospy.logwarn('UNKNOWN ')
                 return TrafficLight.UNKNOWN
             elif self.detection == 1:
-                rospy.logdebug('GREEN')
+                rospy.logwarn('GREEN')
                 return TrafficLight.GREEN
             elif(self.detection == 2):
-                rospy.logdebug('YELLOW')
+                rospy.logwarn('YELLOW')
                 return TrafficLight.YELLOW
             elif(self.detection == 3):
-                rospy.logdebug('RED')
+                rospy.logwarn('RED')
                 return TrafficLight.RED
 
         return TrafficLight.UNKNOWN
