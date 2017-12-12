@@ -31,18 +31,7 @@ class TLDetector(object):
         self.tree = None
         self.lights = []
 
-        # Subscribe to topic '/current_pose' to get the current position of the
-        # car
-        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-
-        # Subscribe to topic '/image_color' to get the image from the cars
-        # front camera
-        rospy.Subscriber('/image_color', Image, self.image_cb)
-
-        # Subscribe to topic '/vehicle/traffic_lights' to get the location and state of the traffic lights
-        # IMPORTANT: The state will not be available in real life testing
-        rospy.Subscriber('/vehicle/traffic_lights',
-                         TrafficLightArray, self.traffic_lights_cb)
+        
 
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
@@ -83,6 +72,19 @@ class TLDetector(object):
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
+
+        # Subscribe to topic '/current_pose' to get the current position of the
+        # car
+        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
+
+        # Subscribe to topic '/image_color' to get the image from the cars
+        # front camera
+        rospy.Subscriber('/image_color', Image, self.image_cb)
+
+        # Subscribe to topic '/vehicle/traffic_lights' to get the location and state of the traffic lights
+        # IMPORTANT: The state will not be available in real life testing
+        rospy.Subscriber('/vehicle/traffic_lights',
+                         TrafficLightArray, self.traffic_lights_cb)
 
         # Block until shutdown -> Tasks are handled with callbacks
         rospy.spin()
