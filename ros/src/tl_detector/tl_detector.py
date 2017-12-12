@@ -44,6 +44,18 @@ class TLDetector(object):
 
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
+        # Subscribe to topic '/current_pose' to get the current position of the
+        # car
+        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
+
+        # Subscribe to topic '/image_color' to get the image from the cars
+        # front camera
+        rospy.Subscriber('/image_color', Image, self.image_cb)
+
+        # Subscribe to topic '/vehicle/traffic_lights' to get the location and state of the traffic lights
+        # IMPORTANT: The state will not be available in real life testing
+        rospy.Subscriber('/vehicle/traffic_lights',
+                         TrafficLightArray, self.traffic_lights_cb)
 
         # list contains waypoints for stop line
         #self.stop_lin_pos = self.config['stop_line_positions']
@@ -64,18 +76,7 @@ class TLDetector(object):
         # The state of the closest red traffic light has to be published
         self.upcoming_red_light_state_pub = rospy.Publisher('/traffic_waypoint_state', Int32, queue_size=1)
 
-        # Subscribe to topic '/current_pose' to get the current position of the
-        # car
-        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
 
-        # Subscribe to topic '/image_color' to get the image from the cars
-        # front camera
-        rospy.Subscriber('/image_color', Image, self.image_cb)
-
-        # Subscribe to topic '/vehicle/traffic_lights' to get the location and state of the traffic lights
-        # IMPORTANT: The state will not be available in real life testing
-        rospy.Subscriber('/vehicle/traffic_lights',
-                         TrafficLightArray, self.traffic_lights_cb)
 
         # Block until shutdown -> Tasks are handled with callbacks
         rospy.spin()
