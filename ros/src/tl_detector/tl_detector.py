@@ -181,10 +181,17 @@ class TLDetector(object):
         # Traffic light available
         # IMPORTANT: Decide if state should be taken from ground truth or camera
         if light:
-            if USE_GROUND_TRUTH_STATE or distance_to_traffic_waypoint < 15 or distance_to_traffic_waypoint > 70:
+            if USE_GROUND_TRUTH_STATE :
                 state = light.state
+                rospy.logdebug("GT: %s", state)
             else:
                 state = self.get_light_state(light)
+                rospy.logdebug("CL: %s", state)
+                if state == 1 or state == 2:
+                    USE_GROUND_TRUTH_STATE = True
+                elif state ==3:
+                    USE_GROUND_TRUTH_STATE = False
+
             return traffic_light_wp_idx, state
         
         # No detectable traffic light found
