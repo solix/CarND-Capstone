@@ -21,7 +21,7 @@ class TLClassifier(object):
 
     def __init__(self, *args):
         self.detection = 0
-        model = 'light_classification/rounded_graph.pb'
+        model = 'light_classification/intermediate_600.pb'
         self.detection_graph = tf.Graph()
         config = tf.ConfigProto()
         config.gpu_options.allow_growth = True
