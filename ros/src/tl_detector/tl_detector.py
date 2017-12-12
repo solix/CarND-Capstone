@@ -6,7 +6,7 @@ from styx_msgs.msg import TrafficLightArray, TrafficLight
 from styx_msgs.msg import Lane
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
-from light_classification.tl_classifierx import TLClassifierx
+from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
 import yaml
@@ -30,6 +30,15 @@ class TLDetector(object):
         self.camera_image = None
         self.tree = None
         self.lights = []
+        self.bridge = CvBridge()
+        self.light_classifier = TLClassifier()
+        self.listener = tf.TransformListener()
+
+        self.state = TrafficLight.UNKNOWN
+        self.last_state = TrafficLight.UNKNOWN
+        self.last_wp = -1
+        self.state_count = 0
+        self.datasize = 0
 
         
 
@@ -47,31 +56,13 @@ class TLDetector(object):
         if not self.base_waypoints:
             self.base_waypoints = wp.waypoints
             self.datasize = len(self.base_waypoints)
-            rospy.logwarn('Got the base points for tl_detector.')
 
-        # Get the x/y coordinates of the base_waypoints
-        b_xcor = []
-        b_ycor = []
+            if PRINT_DEBUG:
+                rospy.logwarn('Got the base points for tl_detector.')        
 
-        for pt in self.base_waypoints:
-            b_xcor.append(pt.pose.pose.position.x)
-            b_ycor.append(pt.pose.pose.position.y)
-        self.tree = KDTree(zip(b_xcor, b_ycor))
-
-        # Create the publisher to write messages to topic '/traffic_waypoint'
-        # The index of the waypoint which is closest to the next red traffic
-        # light has to be published
-        self.upcoming_red_light_pub = rospy.Publisher(
-            '/traffic_waypoint', Int32, queue_size=0)
-
-        self.bridge = CvBridge()
-        self.light_classifier = TLClassifierx()
-        self.listener = tf.TransformListener()
-
-        self.state = TrafficLight.UNKNOWN
-        self.last_state = TrafficLight.UNKNOWN
-        self.last_wp = -1
-        self.state_count = 0
+        # Create the publisher to write messages to topic '/traffic_waypoint_state'
+        # The state of the closest red traffic light has to be published
+        self.upcoming_red_light_state_pub = rospy.Publisher('/traffic_waypoint_state', Int32, queue_size=1)
 
         # Subscribe to topic '/current_pose' to get the current position of the
         # car
@@ -127,16 +118,13 @@ class TLDetector(object):
             self.state = state
         elif self.state_count >= STATE_COUNT_THRESHOLD:
             self.last_state = self.state
-
-            if state == TrafficLight.RED:
-                light_wp = light_wp
-            else:
-                light_wp = -1
             self.last_wp = light_wp
             self.upcoming_red_light_pub.publish(Int32(light_wp))
+            self.upcoming_red_light_state_pub.publish(Int32(self.state))
         else:
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
-
+            self.upcoming_red_light_state_pub.publish(Int32(self.last_state))
+        
         self.state_count += 1
 
     # End: Callback functions for subsribers to ROS topics
@@ -199,11 +187,12 @@ class TLDetector(object):
         # IMPORTANT: Decide if state should be taken from ground truth or
         # camera
         if light:
-            if USE_GROUND_TRUTH_STATE:
+            if USE_GROUND_TRUTH_STATE or distance_to_traffic_waypoint > 40 or distance_to_traffic_waypoint < 20:
                 state = light.state
+                rospy.logdebug("GT: state is %s", state)
             else:
                 state = self.get_light_state(light)
-                rospy.logdebug("state is %s", state)
+                rospy.logdebug("CL: state is %s", state)
             return traffic_light_wp_idx, state
 
         # No detectable traffic light found
@@ -230,7 +219,7 @@ class TLDetector(object):
                 self.curr_pose.orientation.w)
 
             # Check if idx is ahead of us and is closest
-            if (idx >= car_position_idx) and (idx < stop_line_idx):
+            if (idx >= car_position_idx) and (idx <= stop_line_idx):
                 stop_line_idx = idx         # if yes, this is our closest stop line
                 found_idx = i
                 break
