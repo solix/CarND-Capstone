@@ -27,7 +27,7 @@ The project is implemented together in a team.
 * [Dataspeed DBW](https://bitbucket.org/DataspeedInc/dbw_mkz_ros)
   * Use this option to install the SDK on a workstation that already has ROS installed: [One Line SDK Install (binary)](https://bitbucket.org/DataspeedInc/dbw_mkz_ros/src/81e63fcc335d7b64139d7482017d6a97b405e250/ROS_SETUP.md?fileviewer=file-view-default)
 * Download the [Udacity Simulator](https://github.com/udacity/CarND-Capstone/releases).
->>>>>>> upstream/master
+
 
 The following members are part of the international team named ***Chakra***:
 * **Team Lead**
@@ -198,4 +198,3 @@ TrafficLight[] lights
 
 # Conclusion
 
-TODO
