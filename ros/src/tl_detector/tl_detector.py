@@ -35,6 +35,7 @@ class TLDetector(object):
         self.last_wp = -1
         self.state_count = 0
         self.datasize = 0
+        self.ignore_state = False
 
         # Subscribe to topic '/current_pose' to get the current position of the car
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
@@ -113,19 +114,23 @@ class TLDetector(object):
         # Publish upcoming red lights at camera frequency.
         # Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
         # of times till we start using it. Otherwise the previous stable state is used.
-        if self.state != state:
-            self.state_count = 0
-            self.state = state
-        elif self.state_count >= STATE_COUNT_THRESHOLD:
-            self.last_state = self.state
-            self.last_wp = light_wp
+        if self.ignore_state:
             self.upcoming_red_light_pub.publish(Int32(light_wp))
             self.upcoming_red_light_state_pub.publish(Int32(self.state))
         else:
-            self.upcoming_red_light_pub.publish(Int32(self.last_wp))
-            self.upcoming_red_light_state_pub.publish(Int32(self.last_state))
-        
-        self.state_count += 1
+            if self.state != state:
+                self.state_count = 0
+                self.state = state
+            elif self.state_count >= STATE_COUNT_THRESHOLD:
+                self.last_state = self.state
+                self.last_wp = light_wp
+                self.upcoming_red_light_pub.publish(Int32(light_wp))
+                self.upcoming_red_light_state_pub.publish(Int32(self.state))
+            else:
+                self.upcoming_red_light_pub.publish(Int32(self.last_wp))
+                self.upcoming_red_light_state_pub.publish(Int32(self.last_state))
+            
+            self.state_count += 1
 
     ### End: Callback functions for subsribers to ROS topics
 
@@ -181,12 +186,21 @@ class TLDetector(object):
         # Traffic light available
         # IMPORTANT: Decide if state should be taken from ground truth or camera
         if light:
-            if USE_GROUND_TRUTH_STATE or distance_to_traffic_waypoint > 100 or distance_to_traffic_waypoint < 1 :
+            self.ignore_state = False
+
+            if USE_GROUND_TRUTH_STATE:
                 state = light.state
-                rospy.logwarn("GT: %s", state)
+                if PRINT_DEBUG:
+                    rospy.logwarn("GT: %s", state)
+            elif distance_to_traffic_waypoint > 100:
+                state = TrafficLight.UNKNOWN
+                self.ignore_state = True
+                if PRINT_DEBUG:
+                    rospy.logwarn("Ignore Classifier!")
             else:
                 state = self.get_light_state(light)
-                rospy.logwarn("CL: %s", state)
+                if PRINT_DEBUG:
+                    rospy.logwarn("CL: %s", state)
 
             return traffic_light_wp_idx, state
         
