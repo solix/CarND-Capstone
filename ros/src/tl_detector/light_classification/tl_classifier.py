@@ -15,6 +15,7 @@ import cv2
 from collections import defaultdict
 from io import StringIO
 import rospy
+import time
 
 
 class TLClassifier(object):
@@ -40,19 +41,37 @@ class TLClassifier(object):
             'final_result:0')
 
     def get_classification(self, img):
-	#rospy.logwarn('########## CALLING CLASSIFIER #########')
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) #- not required unless
-        # reading input via cv2
+        #rospy.logwarn('########## CALLING CLASSIFIER #########')
+        
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)  #- not required unless
+                                                    # reading input via cv2
         img = cv2.resize(img, (224, 224))
         img = np.expand_dims(img, axis=0)
+        
+        img_float = img.astype(float)
+        
         ###### Normalization code ########
-        input_mean = 128
-        input_std = 128
-        img = img.astype(float)
-        normalized = tf.divide(tf.subtract(img, [input_mean]), [input_std])
-        sess = tf.Session()
-        img_norm = sess.run(normalized)
+        # start = time.time()
+        # input_mean = 128
+        # input_std = 128
+        # normalized = tf.divide(tf.subtract(img_float, [input_mean]), [input_std])
+        # sess = tf.Session()
+        # img_norm_old = sess.run(normalized)
+        # end = time.time()
+        # time1 = end - start
         ######## Normalization code - End ########
+        
+        
+        ###### Normalization code ########
+        start = time.time()
+        image_mean = np.mean(img_float)
+        img_norm = (img_float - image_mean) / image_mean
+        end = time.time()
+        time2 = end - start
+        ###### Normalization code ########
+        
+        rospy.logwarn("time1=%f, time2=%f", time1, time2)
+        
         with self.detection_graph.as_default():
             pred_class = self.sess.run(
                 self.tl_class, feed_dict={self.input_img: img_norm})
