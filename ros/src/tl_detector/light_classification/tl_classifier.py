@@ -8,12 +8,8 @@
 
 from styx_msgs.msg import TrafficLight
 import numpy as np
-import os
-import sys
 import tensorflow as tf
 import cv2
-from collections import defaultdict
-from io import StringIO
 import rospy
 import time
 
@@ -63,11 +59,11 @@ class TLClassifier(object):
         
         
         ###### Normalization code ########
-        start = time.time()
+        #start = time.time()
         image_mean = np.mean(img_float)
         img_norm = (img_float - image_mean) / image_mean
         end = time.time()
-        time2 = end - start
+        #time2 = end - start
         ###### Normalization code ########
         
         #rospy.logwarn("time1=%f, time2=%f", time1, time2)
@@ -75,7 +71,7 @@ class TLClassifier(object):
         with self.detection_graph.as_default():
             pred_class = self.sess.run(
                 self.tl_class, feed_dict={self.input_img: img_norm})
-            float_formatter = lambda x: "%.2f" % x
+            #float_formatter = lambda x: "%.2f" % x
             # rospy.logdebug("predicyion class: %s", pred_class)
 
         self.detection = np.argmax(pred_class)
