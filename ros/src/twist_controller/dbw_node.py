@@ -142,11 +142,8 @@ class DBWNode(object):
     ### End: Callback functions for subsribers to ROS topics
 
     def loop(self):
-        # Set update rate (50Hz)
-        # TODO !!!!!!!!!!!!!!!!!!
-        # TODO set to 50Hz for final solution
-        # TODO set to 5Hz for testing issues
-        rate = rospy.Rate(5)
+        # Set update rate (50Hz) -> needed for the Drive-by-wire system of Carla
+        rate = rospy.Rate(50)
         while not rospy.is_shutdown():
             # Get predicted throttle, brake, and steering
             # Only calculate and publish the control commands if dbw is enabled

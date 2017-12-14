@@ -14,7 +14,7 @@ from scipy.spatial import KDTree
 import math
 
 STATE_COUNT_THRESHOLD = 3
-PRINT_DEBUG = True              # Print rospy.logwarn for debugging if True
+PRINT_DEBUG = False              # Print rospy.logwarn for debugging if True
 USE_GROUND_TRUTH_STATE = False   # True if traffic light state should be taken from ground truth data
 
 class TLDetector(object):

@@ -16,6 +16,7 @@ from collections import defaultdict
 from io import StringIO
 import rospy
 
+PRINT_DEBUG = False  # Print rospy.logwarn for debugging if True
 
 class TLClassifier(object):
 
@@ -62,18 +63,21 @@ class TLClassifier(object):
         self.detection = np.argmax(pred_class)
 
         if(pred_class[0][np.argmax(pred_class)] > 0.3):
-
             if self.detection == 0:
-                rospy.logwarn('UNKNOWN ')
+                if PRINT_DEBUG:
+                    rospy.logwarn('UNKNOWN ')
                 return TrafficLight.UNKNOWN
             elif self.detection == 1:
-                rospy.logwarn('GREEN')
+                if PRINT_DEBUG:
+                    rospy.logwarn('GREEN')
                 return TrafficLight.GREEN
             elif(self.detection == 2):
-                rospy.logwarn('YELLOW')
+                if PRINT_DEBUG:
+                    rospy.logwarn('YELLOW')
                 return TrafficLight.YELLOW
             elif(self.detection == 3):
-                rospy.logwarn('RED')
+                if PRINT_DEBUG:
+                    rospy.logwarn('RED')
                 return TrafficLight.RED
 
         return TrafficLight.UNKNOWN
