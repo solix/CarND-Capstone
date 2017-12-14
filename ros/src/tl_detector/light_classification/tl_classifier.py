@@ -70,7 +70,7 @@ class TLClassifier(object):
         time2 = end - start
         ###### Normalization code ########
         
-        rospy.logwarn("time1=%f, time2=%f", time1, time2)
+        #rospy.logwarn("time1=%f, time2=%f", time1, time2)
         
         with self.detection_graph.as_default():
             pred_class = self.sess.run(
