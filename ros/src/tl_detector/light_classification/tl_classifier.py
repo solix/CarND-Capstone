@@ -44,29 +44,10 @@ class TLClassifier(object):
         img = cv2.resize(img, (224, 224))
         img = np.expand_dims(img, axis=0)
         
+        ###### Normalization code ########
         img_float = img.astype(float)
-        
-        ###### Normalization code ########
-        # start = time.time()
-        # input_mean = 128
-        # input_std = 128
-        # normalized = tf.divide(tf.subtract(img_float, [input_mean]), [input_std])
-        # sess = tf.Session()
-        # img_norm_old = sess.run(normalized)
-        # end = time.time()
-        # time1 = end - start
-        ######## Normalization code - End ########
-        
-        
-        ###### Normalization code ########
-        #start = time.time()
         image_mean = np.mean(img_float)
         img_norm = (img_float - image_mean) / image_mean
-        end = time.time()
-        #time2 = end - start
-        ###### Normalization code ########
-        
-        #rospy.logwarn("time1=%f, time2=%f", time1, time2)
         
         with self.detection_graph.as_default():
             pred_class = self.sess.run(
