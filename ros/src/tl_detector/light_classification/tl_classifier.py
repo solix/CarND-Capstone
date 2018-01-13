@@ -18,6 +18,7 @@ import rospy
 from matplotlib import pyplot as plt
 from light_classification.utils import label_map_util
 from light_classification.utils import visualization_utils as vis_util
+from sensor_msgs.msg import Image
 
 PRINT_DEBUG = True  # Print rospy.logwarn for debugging if True
 
