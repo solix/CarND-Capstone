@@ -121,16 +121,6 @@ class TLClassifier(object):
                         self.category_index,
                         use_normalized_coordinates=True,
                         line_thickness=8)
-                    # plt.figure(figsize=(12, 12))
-                    # plt.imshow(img_np)
-                    # plt.show()
-                    # cv2.imshow('image', cv2.resize(img_np, (640, 488)))
-                    #### Create CompressedIamge ####
-                    msg = CompressedImage()
-                    msg.header.stamp = rospy.Time.now()
-                    msg.format = "jpeg"
-                    msg.data = np.array(cv2.imencode(
-                        '.jpg', img_np)[1]).tostring()
                     self.detection = np.argmax(classes)
 
                     try:
