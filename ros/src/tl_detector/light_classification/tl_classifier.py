@@ -37,7 +37,7 @@ class TLClassifier(object):
             "/detector_node/image", Image, queue_size=1)
         self.bridge = CvBridge()
 
-        self.MODEL_NAME = 'light_classification/data/models/ssd-10183.pb'
+        self.MODEL_NAME = 'light_classification/data/models'
         # DOWNLOAD_BASE = 'http://download.tensorflow.org/models/object_detection/'
         # Path to frozen detection graph. This is the actual model that is used
         # for the object detection.
