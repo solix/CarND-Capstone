@@ -16,8 +16,8 @@ from collections import defaultdict
 from io import StringIO
 import rospy
 from matplotlib import pyplot as plt
-from utils import label_map_util
-from utils import visualization_utils as vis_util
+from light_classification.utils import label_map_util
+from light_classification.utils import visualization_utils as vis_util
 
 PRINT_DEBUG = True  # Print rospy.logwarn for debugging if True
 
