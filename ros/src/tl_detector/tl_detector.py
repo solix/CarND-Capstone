@@ -41,7 +41,7 @@ class TLDetector(object):
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         
         # Subscribe to topic '/image_color' to get the image from the cars front camera
-        rospy.Subscriber('/image_color', Image, self.image_cb)
+        rospy.Subscriber('/image_color', Image, self.image_cb,queue_size=1,buffer_size = 2**24)
 
         # Subscribe to topic '/vehicle/traffic_lights' to get the location and state of the traffic lights
         # IMPORTANT: The state will not be available in real life testing

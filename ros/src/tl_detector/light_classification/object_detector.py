@@ -1,50 +1,73 @@
-# Takes an image of random size as an input
-# Resizes it to 1X224X224X3
-# returns the prediction label
-#0 - unknown
-#1 - green
-#2 - yellow
-#3 - red
+#!/usr/bin/env python
 
-from styx_msgs.msg import TrafficLight
+
+# # Object Detection Demo
+# Welcome to the object detection inference walkthrough!  This notebook
+# will walk you step by step through the process of using a pre-trained
+# model to detect objects in an image. Make sure to follow the
+# [installation
+# instructions](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/installation.md)
+# before you start from __future__ import print_function
+import roslib
+roslib.load_manifest('object_detector')
+
+import rospy
+from std_msgs.msg import String
+from sensor_msgs.msg import Image, CompressedImage
+
+from cv_bridge import CvBridge, CvBridgeError
+
+
 import numpy as np
 import os
+import six.moves.urllib as urllib
 import sys
+import tarfile
 import tensorflow as tf
+import zipfile
 import cv2
 from collections import defaultdict
 from io import StringIO
-import rospy
 from matplotlib import pyplot as plt
 from utils import label_map_util
 from utils import visualization_utils as vis_util
-
-PRINT_DEBUG = True  # Print rospy.logwarn for debugging if True
 
 if tf.__version__ < '1.4.0':
     raise ImportError(
         'Please upgrade your tensorflow installation to v1.4.* or later!')
 
 
-class TLClassifier(object):
+class object_detector:
 
-    def __init__(self, *args):
-        self.detection = 0
+    def __init__(self):
         self.image_pub = rospy.Publisher(
             "/detector_node/image", Image, queue_size=1)
         self.bridge = CvBridge()
+        self.image_sub = rospy.Subscriber(
+            "/raspicam_node/image/compressed", CompressedImage, self.callback, queue_size=1, buff_size=2**24)
 
-        self.MODEL_NAME = 'llight_classification/data/models/ssd-10183.pb'
+        self.MODEL_NAME = 'ssd_mobilenet_v1_coco_2017_11_17'
         # DOWNLOAD_BASE = 'http://download.tensorflow.org/models/object_detection/'
         # Path to frozen detection graph. This is the actual model that is used
         # for the object detection.
-        self.PATH_TO_CKPT = self.MODEL_NAME + '/ssd-10183.pb'
+        self.PATH_TO_CKPT = 'src/object_detector/' + \
+            self.MODEL_NAME + '/frozen_inference_graph.pb'
 
         # List of the strings that is used to add correct label for each box.
         self.PATH_TO_LABELS = os.path.join(
-            self.MODEL_NAME, 'label_bosch.pbtxt')
+            'src/object_detector/data', 'mscoco_label_map.pbtxt')
 
-        self.NUM_CLASSES = 4
+        self.NUM_CLASSES = 90
+
+        # ## Download Model
+
+        # opener = urllib.request.URLopener()
+        # opener.retrieve(DOWNLOAD_BASE + MODEL_FILE, MODEL_FILE)
+        # tar_file = tarfile.open(MODEL_FILE)
+        # for file in tar_file.getmembers():
+        #     file_name = os.path.basename(file.name)
+        #     if 'frozen_inference_graph.pb' in file_name:
+        #         tar_file.extract(file, os.getcwd())
 
         # ## Load a (frozen) Tensorflow model into memory.
 
@@ -56,14 +79,20 @@ class TLClassifier(object):
                 od_graph_def.ParseFromString(serialized_graph)
                 tf.import_graph_def(od_graph_def, name='')
 
+        # ## Loading label map
+        # Label maps map indices to category names, so that when our convolution
+        # network predicts `5`, we know that this corresponds to `airplane`.  Here
+        # we use internal utility functions, but anything that returns a
+        # dictionary mapping integers to appropriate string labels would be
+        # fine
+
         self.label_map = label_map_util.load_labelmap(self.PATH_TO_LABELS)
         self.categories = label_map_util.convert_label_map_to_categories(
             self.label_map, max_num_classes=self.NUM_CLASSES, use_display_name=True)
         self.category_index = label_map_util.create_category_index(
             self.categories)
 
-    def get_classification(self, img):
-
+    def callback(self, data):
         try:
                 #### direct conversion to CV2 ####
             np_arr = np.fromstring(data.data, np.uint8)
@@ -128,7 +157,6 @@ class TLClassifier(object):
                     msg.format = "jpeg"
                     msg.data = np.array(cv2.imencode(
                         '.jpg', img_np)[1]).tostring()
-                    self.detection = np.argmax(classes)
 
                     try:
                         self.image_pub.publish(
@@ -136,26 +164,20 @@ class TLClassifier(object):
                         # cv2.imwrite('res/' + str(msg.header.stamp) +'camera_image.jpeg', img_np)
                         rospy.loginfo("processed the IMage")
                         ret = False
-                        if(classes[0][np.argmax(classes)] > 0.3):
-                            if self.detection == 0:
-                                if PRINT_DEBUG:
-                                    rospy.logwarn('UNKNOWN ')
-                                return TrafficLight.UNKNOWN
-                            elif self.detection == 1:
-                                if PRINT_DEBUG:
-                                    rospy.logwarn('GREEN')
-                                return TrafficLight.GREEN
-                            elif(self.detection == 2):
-                                if PRINT_DEBUG:
-                                    rospy.logwarn('YELLOW')
-                                return TrafficLight.YELLOW
-                            elif(self.detection == 3):
-                                if PRINT_DEBUG:
-                                    rospy.logwarn('RED')
-                                return TrafficLight.RED
                     except CvBridgeError as e:
                         print(e)
 
-        
 
-        return TrafficLight.UNKNOWN
+def main(args):
+    ic = object_detector()
+    rospy.init_node('object_detector', anonymous=True)
+    try:
+        rospy.spin()
+    except KeyboardInterrupt:
+        print("Shutting down")
+    # cv2.destroyAllWindows()
+    # rospy.sleep(1.0 / 1.0)
+
+
+if __name__ == '__main__':
+    main(sys.argv)
