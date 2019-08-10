@@ -8,13 +8,10 @@
 
 from styx_msgs.msg import TrafficLight
 import numpy as np
-import os
-import sys
 import tensorflow as tf
 import cv2
-from collections import defaultdict
-from io import StringIO
 import rospy
+import time
 
 PRINT_DEBUG = False  # Print rospy.logwarn for debugging if True
 
@@ -41,23 +38,22 @@ class TLClassifier(object):
             'final_result:0')
 
     def get_classification(self, img):
-	#rospy.logwarn('########## CALLING CLASSIFIER #########')
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) #- not required unless
-        # reading input via cv2
+        #rospy.logwarn('########## CALLING CLASSIFIER #########')
+        
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)  #- not required unless
+                                                    # reading input via cv2
         img = cv2.resize(img, (224, 224))
         img = np.expand_dims(img, axis=0)
+        
         ###### Normalization code ########
-        input_mean = 128
-        input_std = 128
-        img = img.astype(float)
-        normalized = tf.divide(tf.subtract(img, [input_mean]), [input_std])
-        sess = tf.Session()
-        img_norm = sess.run(normalized)
-        ######## Normalization code - End ########
+        img_float = img.astype(float)
+        image_mean = np.mean(img_float)
+        img_norm = (img_float - image_mean) / image_mean
+        
         with self.detection_graph.as_default():
             pred_class = self.sess.run(
                 self.tl_class, feed_dict={self.input_img: img_norm})
-            float_formatter = lambda x: "%.2f" % x
+            #float_formatter = lambda x: "%.2f" % x
             # rospy.logdebug("predicyion class: %s", pred_class)
 
         self.detection = np.argmax(pred_class)
